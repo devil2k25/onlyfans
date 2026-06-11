@@ -1,39 +1,73 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, X, Image, Video, Lock, Unlock, Send, ArrowLeft } from 'lucide-react';
+import {
+  Box, Typography, Button, Paper, TextField, Stack,
+  ImageList, ImageListItem, FormControlLabel, Switch, Alert,
+  CircularProgress, IconButton,
+} from '@mui/material';
+import { CloudUploadRounded, CloseRounded, LockRounded, LockOpenRounded, VideoFileRounded, ImageRounded } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext.jsx';
 import { createPost } from '../api/posts.js';
 
 function FilePreview({ file, url, onRemove, index }) {
   const isVideo = file.type.startsWith('video/');
   return (
-    <div className="relative group rounded-lg overflow-hidden bg-[#0a0a0a] border border-[#2a2a2a]">
+    <ImageListItem
+      sx={{
+        borderRadius: 2,
+        overflow: 'hidden',
+        bgcolor: 'background.default',
+        border: '1px solid',
+        borderColor: 'divider',
+        position: 'relative',
+        '&:hover .remove-btn': { opacity: 1 },
+      }}
+    >
       {isVideo ? (
-        <video
+        <Box
+          component="video"
           src={url}
-          className="w-full h-40 object-cover"
-          controls={false}
+          sx={{ width: '100%', height: 160, objectFit: 'cover' }}
           muted
         />
       ) : (
-        <img src={url} alt={`preview ${index}`} className="w-full h-40 object-cover" />
+        <Box
+          component="img"
+          src={url}
+          alt={`preview ${index}`}
+          sx={{ width: '100%', height: 160, objectFit: 'cover' }}
+        />
       )}
-      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-        <button
-          type="button"
+      <Box
+        className="remove-btn"
+        sx={{
+          position: 'absolute',
+          inset: 0,
+          bgcolor: 'rgba(0,0,0,0.4)',
+          opacity: 0,
+          transition: 'opacity 0.2s',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <IconButton
+          size="small"
           onClick={() => onRemove(index)}
-          className="bg-red-600 hover:bg-red-700 text-white rounded-full p-1.5 transition-colors"
+          sx={{ bgcolor: 'error.main', color: 'white', '&:hover': { bgcolor: 'error.dark' } }}
         >
-          <X size={16} />
-        </button>
-      </div>
-      <div className="absolute bottom-1 right-1">
-        <span className="bg-black/60 text-white text-xs rounded px-1.5 py-0.5 flex items-center gap-1">
-          {isVideo ? <Video size={10} /> : <Image size={10} />}
-          {isVideo ? 'Video' : 'Image'}
-        </span>
-      </div>
-    </div>
+          <CloseRounded fontSize="small" />
+        </IconButton>
+      </Box>
+      <Box sx={{ position: 'absolute', bottom: 6, right: 6 }}>
+        <Paper sx={{ px: 1, py: 0.25, display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: 'rgba(0,0,0,0.6)' }}>
+          {isVideo ? <VideoFileRounded sx={{ fontSize: 12, color: 'white' }} /> : <ImageRounded sx={{ fontSize: 12, color: 'white' }} />}
+          <Typography variant="caption" sx={{ color: 'white', fontSize: '0.65rem' }}>
+            {isVideo ? 'Video' : 'Image'}
+          </Typography>
+        </Paper>
+      </Box>
+    </ImageListItem>
   );
 }
 
@@ -104,7 +138,6 @@ export default function CreatePost() {
 
       const res = await createPost(fd);
       if (res.data.success) {
-        // Clean up preview URLs
         previews.forEach((url) => URL.revokeObjectURL(url));
         navigate(`/${user.username}`);
       } else {
@@ -118,184 +151,158 @@ export default function CreatePost() {
 
   if (!user?.is_creator) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-16 flex flex-col items-center text-center">
-        <Lock size={36} className="text-gray-500 mb-4" />
-        <h2 className="text-white text-xl font-semibold mb-2">Creator Access Only</h2>
-        <p className="text-gray-400 text-sm mb-6">
+      <Box maxWidth={600} mx="auto" px={3} py={10} display="flex" flexDirection="column" alignItems="center" textAlign="center">
+        <LockRounded sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+        <Typography variant="h6" gutterBottom>Creator Access Only</Typography>
+        <Typography variant="body2" color="text.secondary" mb={3}>
           Enable creator mode in settings to post content.
-        </p>
-        <button
-          onClick={() => navigate('/settings')}
-          className="bg-[#00b8ff] hover:bg-[#0099d4] text-white font-semibold rounded-lg px-5 py-2.5 text-sm transition-colors"
-        >
+        </Typography>
+        <Button variant="contained" color="primary" onClick={() => navigate('/settings')}>
           Go to Settings
-        </button>
-      </div>
+        </Button>
+      </Box>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6">
-      <div className="flex items-center gap-3 mb-6">
-        <button
-          onClick={() => navigate(-1)}
-          className="text-gray-400 hover:text-white transition-colors"
-        >
-          <ArrowLeft size={20} />
-        </button>
-        <h1 className="text-white text-xl font-bold">Create Post</h1>
-      </div>
+    <Box maxWidth={600} mx="auto" px={3} py={3}>
+      <Typography variant="h5" fontWeight="bold" mb={3}>
+        Create Post
+      </Typography>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <Box component="form" onSubmit={handleSubmit}>
         {error && (
-          <div className="bg-red-900/30 border border-red-700/50 text-red-400 text-sm rounded-lg px-4 py-3 flex items-center gap-2">
-            <X size={16} />
+          <Alert severity="error" sx={{ mb: 2 }}>
             {error}
-          </div>
+          </Alert>
         )}
 
-        {/* Media Upload Area */}
-        <div>
-          <label className="block text-gray-400 text-sm font-medium mb-2">Media</label>
-          <div
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onClick={() => fileInputRef.current?.click()}
-            className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
-              dragging
-                ? 'border-[#00b8ff] bg-[#00b8ff]/5'
-                : 'border-[#3a3a3a] hover:border-[#00b8ff]/60 bg-[#1a1a1a]'
-            }`}
-          >
-            <div className="flex flex-col items-center gap-3">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${dragging ? 'bg-[#00b8ff]/20' : 'bg-[#2a2a2a]'}`}>
-                <Upload size={22} className={dragging ? 'text-[#00b8ff]' : 'text-gray-400'} />
-              </div>
-              <div>
-                <p className="text-white text-sm font-medium">
-                  {dragging ? 'Drop files here' : 'Drag & drop or click to upload'}
-                </p>
-                <p className="text-gray-500 text-xs mt-1">
-                  Images (JPG, PNG, GIF, WebP) or Videos (MP4, MOV, WebM)
-                </p>
-              </div>
-            </div>
-          </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*,video/*"
-            multiple
-            onChange={handleFileChange}
-            className="hidden"
+        {/* Upload area */}
+        <Paper
+          variant="outlined"
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onClick={() => fileInputRef.current?.click()}
+          sx={{
+            border: '2px dashed',
+            borderColor: dragging ? 'primary.main' : 'divider',
+            borderRadius: 3,
+            p: 4,
+            textAlign: 'center',
+            cursor: 'pointer',
+            bgcolor: dragging ? (t) => `rgba(0,184,255,0.04)` : 'transparent',
+            transition: 'border-color 0.2s, background-color 0.2s',
+            '&:hover': { borderColor: 'primary.main' },
+            mb: 2,
+          }}
+        >
+          <CloudUploadRounded
+            sx={{ fontSize: 48, color: dragging ? 'primary.main' : 'text.secondary', mb: 1 }}
           />
-        </div>
+          <Typography variant="body1" fontWeight={500}>
+            {dragging ? 'Drop files here' : 'Drag & drop or click to upload'}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Images &amp; videos, max 100MB
+          </Typography>
+        </Paper>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,video/*"
+          multiple
+          onChange={handleFileChange}
+          style={{ display: 'none' }}
+        />
 
-        {/* File Previews */}
+        {/* Previews */}
         {previews.length > 0 && (
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-gray-400 text-sm font-medium">
+          <Box mb={2}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
+              <Typography variant="body2" color="text.secondary">
                 Selected Files ({files.length})
-              </label>
-              <button
-                type="button"
+              </Typography>
+              <Button
+                size="small"
+                color="error"
                 onClick={() => {
                   previews.forEach((url) => URL.revokeObjectURL(url));
                   setFiles([]);
                   setPreviews([]);
                 }}
-                className="text-gray-500 hover:text-red-400 text-xs transition-colors"
               >
                 Remove all
-              </button>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              </Button>
+            </Stack>
+            <ImageList cols={2} gap={8}>
               {previews.map((url, i) => (
-                <FilePreview
-                  key={i}
-                  file={files[i]}
-                  url={url}
-                  index={i}
-                  onRemove={removeFile}
-                />
+                <FilePreview key={i} file={files[i]} url={url} index={i} onRemove={removeFile} />
               ))}
-            </div>
-          </div>
+            </ImageList>
+          </Box>
         )}
 
         {/* Caption */}
-        <div>
-          <label className="block text-gray-400 text-sm font-medium mb-1.5">
-            Caption
-          </label>
-          <textarea
-            value={caption}
-            onChange={(e) => setCaption(e.target.value)}
-            placeholder="Write something for your fans..."
-            rows={4}
-            className="w-full bg-[#1a1a1a] border border-[#2a2a2a] text-white placeholder-gray-600 rounded-xl px-4 py-3 text-sm focus:border-[#00b8ff] focus:outline-none transition-colors resize-none"
-          />
-          <p className="text-gray-600 text-xs mt-1 text-right">{caption.length} chars</p>
-        </div>
+        <TextField
+          label="Caption"
+          multiline
+          rows={4}
+          fullWidth
+          value={caption}
+          onChange={(e) => setCaption(e.target.value)}
+          placeholder="Write something for your fans..."
+          sx={{ mb: 2 }}
+        />
 
-        {/* Free/Paid Toggle */}
-        <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-4">
-          <p className="text-white text-sm font-semibold mb-3">Visibility</p>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => setIsFree(true)}
-              className={`flex items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium transition-colors border ${
-                isFree
-                  ? 'bg-[#00b8ff]/10 border-[#00b8ff] text-[#00b8ff]'
-                  : 'border-[#2a2a2a] text-gray-400 hover:border-[#3a3a3a]'
-              }`}
-            >
-              <Unlock size={16} />
-              <div className="text-left">
-                <p className="font-semibold">Free</p>
-                <p className="text-xs opacity-70 font-normal">Everyone can see</p>
-              </div>
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsFree(false)}
-              className={`flex items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium transition-colors border ${
-                !isFree
-                  ? 'bg-[#00b8ff]/10 border-[#00b8ff] text-[#00b8ff]'
-                  : 'border-[#2a2a2a] text-gray-400 hover:border-[#3a3a3a]'
-              }`}
-            >
-              <Lock size={16} />
-              <div className="text-left">
-                <p className="font-semibold">Paid</p>
-                <p className="text-xs opacity-70 font-normal">Subscribers only</p>
-              </div>
-            </button>
-          </div>
-        </div>
+        {/* Free/Paid toggle */}
+        <Paper variant="outlined" sx={{ p: 2.5, mb: 3, borderRadius: 2 }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Box>
+              <Typography variant="body2" fontWeight={600}>
+                {isFree ? 'Free post' : 'Subscribers only'}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {isFree ? 'Everyone can see this post' : 'Only subscribers can view this post'}
+              </Typography>
+            </Box>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={!isFree}
+                  onChange={(e) => setIsFree(!e.target.checked)}
+                  color="primary"
+                />
+              }
+              label={
+                <Stack direction="row" alignItems="center" spacing={0.5}>
+                  {isFree ? <LockOpenRounded fontSize="small" /> : <LockRounded fontSize="small" />}
+                  <Typography variant="body2">{isFree ? 'Free' : 'Paid'}</Typography>
+                </Stack>
+              }
+              sx={{ mr: 0 }}
+            />
+          </Stack>
+        </Paper>
 
         {/* Submit */}
-        <button
-          type="submit"
-          disabled={submitting || (!caption.trim() && files.length === 0)}
-          className="w-full flex items-center justify-center gap-2 bg-[#00b8ff] hover:bg-[#0099d4] text-white font-semibold rounded-xl px-6 py-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {submitting ? (
-            <>
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Publishing...
-            </>
-          ) : (
-            <>
-              <Send size={18} />
-              Publish Post
-            </>
-          )}
-        </button>
-      </form>
-    </div>
+        <Stack direction="row" spacing={2}>
+          <Button variant="outlined" onClick={() => navigate(-1)} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            variant="contained"
+            color="primary"
+            flex={1}
+            disabled={submitting || (!caption.trim() && files.length === 0)}
+            startIcon={submitting ? <CircularProgress size={16} color="inherit" /> : null}
+            sx={{ flex: 1 }}
+          >
+            {submitting ? 'Publishing…' : 'Publish'}
+          </Button>
+        </Stack>
+      </Box>
+    </Box>
   );
 }
