@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Radio, Users, Clock, Send, Eye, DollarSign, X } from 'lucide-react';
+import {
+  Box, Typography, TextField, Stack, Chip, IconButton, Fab,
+  FormControlLabel, Switch, Paper, Divider, Button, CircularProgress, Alert,
+} from '@mui/material';
+import { SendRounded, StopRounded, VisibilityRounded, RadioRounded, AccessTimeRounded } from '@mui/icons-material';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 import { createStream, endStream } from '../api/streams';
@@ -38,7 +42,7 @@ export default function GoLive() {
 
   const localVideoRef = useRef(null);
   const localStreamRef = useRef(null);
-  const peerConnectionsRef = useRef(new Map()); // viewerSocketId -> RTCPeerConnection
+  const peerConnectionsRef = useRef(new Map());
   const timerRef = useRef(null);
   const chatEndRef = useRef(null);
 
@@ -46,7 +50,6 @@ export default function GoLive() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
 
-  // Timer
   useEffect(() => {
     if (phase === 'live') {
       timerRef.current = setInterval(() => setDuration((d) => d + 1), 1000);
@@ -54,7 +57,6 @@ export default function GoLive() {
     return () => clearInterval(timerRef.current);
   }, [phase]);
 
-  // Socket listeners for streaming
   useEffect(() => {
     if (!socket || phase !== 'live') return;
 
@@ -152,7 +154,6 @@ export default function GoLive() {
       const newStream = res.data?.data || res.data;
       setStream(newStream);
 
-      // Get local video/audio
       const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       localStreamRef.current = mediaStream;
       if (localVideoRef.current) {
@@ -204,7 +205,6 @@ export default function GoLive() {
     return h > 0 ? `${h}:${m}:${s}` : `${m}:${s}`;
   };
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       localStreamRef.current?.getTracks().forEach((t) => t.stop());
@@ -215,202 +215,226 @@ export default function GoLive() {
 
   if (phase === 'setup') {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] py-8 px-4">
-        <div className="max-w-xl mx-auto">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center">
-              <Radio size={20} className="text-white" />
-            </div>
-            <div>
-              <h1 className="text-white text-xl font-bold">Go Live</h1>
-              <p className="text-gray-400 text-sm">Start a live stream for your fans</p>
-            </div>
-          </div>
+      <Box maxWidth={600} mx="auto" px={3} py={3}>
+        <Stack direction="row" alignItems="center" spacing={2} mb={4}>
+          <Box sx={{ width: 44, height: 44, borderRadius: '50%', bgcolor: 'error.main', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <RadioRounded sx={{ color: 'white' }} />
+          </Box>
+          <Box>
+            <Typography variant="h5" fontWeight="bold">Go Live</Typography>
+            <Typography variant="body2" color="text.secondary">Start a live stream for your fans</Typography>
+          </Box>
+        </Stack>
 
-          <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl p-6 flex flex-col gap-5">
-            {/* Title */}
-            <div>
-              <label className="text-gray-400 text-sm font-medium block mb-1.5">Title *</label>
-              <input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="What's this stream about?"
-                className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-[#00b8ff] transition-colors"
-              />
-            </div>
+        <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3, p: 3 }}>
+          <Stack spacing={2.5}>
+            <TextField
+              label="Stream Title"
+              fullWidth
+              required
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="What's this stream about?"
+            />
 
-            {/* Description */}
-            <div>
-              <label className="text-gray-400 text-sm font-medium block mb-1.5">Description</label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Tell your audience what to expect..."
-                rows={3}
-                className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm resize-none focus:outline-none focus:border-[#00b8ff] transition-colors"
-              />
-            </div>
+            <TextField
+              label="Description"
+              fullWidth
+              multiline
+              rows={2}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Tell your audience what to expect..."
+            />
 
-            {/* Paid toggle */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <DollarSign size={16} className="text-[#00b8ff]" />
-                <span className="text-white text-sm font-medium">Paid Stream</span>
-              </div>
-              <button
-                onClick={() => setIsPaid((p) => !p)}
-                className={`w-12 h-6 rounded-full transition-colors relative ${isPaid ? 'bg-[#00b8ff]' : 'bg-[#2a2a2a]'}`}
-              >
-                <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${isPaid ? 'right-1' : 'left-1'}`} />
-              </button>
-            </div>
+            <FormControlLabel
+              control={<Switch checked={isPaid} onChange={(e) => setIsPaid(e.target.checked)} color="primary" />}
+              label={<Typography variant="body2" fontWeight={500}>Paid Stream</Typography>}
+            />
 
             {isPaid && (
-              <div>
-                <label className="text-gray-400 text-sm font-medium block mb-1.5">Price ($)</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  placeholder="e.g. 4.99"
-                  className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-[#00b8ff] transition-colors"
-                />
-              </div>
+              <TextField
+                label="Ticket price ($)"
+                type="number"
+                fullWidth
+                inputProps={{ min: 0, step: 0.01 }}
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                placeholder="e.g. 4.99"
+              />
             )}
 
-            {/* Schedule */}
-            <div>
-              <label className="text-gray-400 text-sm font-medium block mb-2">When</label>
-              <div className="flex gap-2 mb-3">
+            <Box>
+              <Typography variant="body2" color="text.secondary" mb={1}>When</Typography>
+              <Stack direction="row" spacing={1} mb={1.5}>
                 {[{ value: 'now', label: 'Start Now' }, { value: 'scheduled', label: 'Schedule' }].map(({ value, label }) => (
-                  <button
+                  <Button
                     key={value}
+                    variant={scheduleType === value ? 'contained' : 'outlined'}
+                    color={scheduleType === value ? 'primary' : 'inherit'}
                     onClick={() => setScheduleType(value)}
-                    className={`flex-1 py-2.5 rounded-xl border text-sm font-semibold transition-colors ${
-                      scheduleType === value
-                        ? 'border-[#00b8ff] bg-[#00b8ff]/10 text-[#00b8ff]'
-                        : 'border-[#2a2a2a] text-gray-400 hover:border-[#3a3a3a] hover:text-white'
-                    }`}
+                    sx={{ flex: 1 }}
                   >
                     {label}
-                  </button>
+                  </Button>
                 ))}
-              </div>
+              </Stack>
               {scheduleType === 'scheduled' && (
-                <input
+                <TextField
                   type="datetime-local"
+                  fullWidth
                   value={scheduledAt}
                   onChange={(e) => setScheduledAt(e.target.value)}
-                  className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#00b8ff] transition-colors"
+                  InputLabelProps={{ shrink: true }}
                 />
               )}
-            </div>
+            </Box>
 
-            {setupError && <p className="text-red-400 text-sm">{setupError}</p>}
+            {setupError && <Alert severity="error">{setupError}</Alert>}
 
-            <button
+            <Button
+              variant="contained"
+              color="error"
+              fullWidth
+              size="large"
               onClick={handleStartStream}
               disabled={starting}
-              className="w-full bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-bold rounded-xl py-4 flex items-center justify-center gap-2 transition-colors"
+              startIcon={starting ? <CircularProgress size={18} color="inherit" /> : <RadioRounded />}
             >
-              <Radio size={20} />
               {starting ? 'Starting…' : scheduleType === 'now' ? 'Go Live Now' : 'Schedule Stream'}
-            </button>
-          </div>
-        </div>
-      </div>
+            </Button>
+          </Stack>
+        </Paper>
+      </Box>
     );
   }
 
   // Live phase
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex flex-col md:flex-row">
-      {/* Video area */}
-      <div className="relative flex-1 min-h-[50vh] md:min-h-screen bg-black">
-        <video
+    <Box display="flex" height="100vh" flexDirection={{ xs: 'column', md: 'row' }}>
+      {/* Video panel */}
+      <Box flex={1} position="relative" bgcolor="black" sx={{ minHeight: { xs: '50vh', md: '100vh' } }}>
+        <Box
+          component="video"
           ref={localVideoRef}
           autoPlay
           playsInline
           muted
-          className="w-full h-full object-cover"
+          sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
         />
 
         {/* Overlay top */}
-        <div className="absolute top-4 left-4 right-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <span className="bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE
-            </span>
-            <span className="bg-black/60 text-white text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1">
-              <Clock size={12} /> {formatDuration(duration)}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="bg-black/60 text-white text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1">
-              <Eye size={12} /> {viewerCount}
-            </span>
-          </div>
-        </div>
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            p: 2,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <Stack direction="row" spacing={1}>
+            <Chip
+              label="LIVE"
+              color="error"
+              size="small"
+              icon={<Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'white', animation: 'pulse 1s infinite', '@keyframes pulse': { '0%,100%': { opacity: 1 }, '50%': { opacity: 0.3 } } }} />}
+              sx={{ fontWeight: 700 }}
+            />
+            <Chip
+              label={formatDuration(duration)}
+              size="small"
+              icon={<AccessTimeRounded sx={{ fontSize: 14 }} />}
+              sx={{ bgcolor: 'rgba(0,0,0,0.6)', color: 'white', '& .MuiChip-icon': { color: 'white' } }}
+            />
+          </Stack>
+          <Chip
+            label={`${viewerCount} viewers`}
+            size="small"
+            icon={<VisibilityRounded sx={{ fontSize: 14 }} />}
+            sx={{ bgcolor: 'rgba(0,0,0,0.6)', color: 'white', '& .MuiChip-icon': { color: 'white' } }}
+          />
+        </Box>
 
         {/* Stream title */}
-        <div className="absolute bottom-4 left-4">
-          <p className="text-white font-bold text-lg drop-shadow">{stream?.title}</p>
-        </div>
+        <Box sx={{ position: 'absolute', bottom: 80, left: 16 }}>
+          <Typography variant="h6" fontWeight="bold" sx={{ color: 'white', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+            {stream?.title}
+          </Typography>
+        </Box>
 
-        {/* End stream button */}
-        <button
-          onClick={handleEndStream}
-          disabled={ending}
-          className="absolute bottom-4 right-4 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white text-sm font-bold rounded-xl px-4 py-2.5 flex items-center gap-2 transition-colors"
-        >
-          <X size={16} /> End Stream
-        </button>
-      </div>
+        {/* End stream FAB */}
+        <Box sx={{ position: 'absolute', bottom: 16, left: 0, right: 0, display: 'flex', justifyContent: 'center' }}>
+          <Fab
+            color="error"
+            onClick={handleEndStream}
+            disabled={ending}
+            size="medium"
+          >
+            {ending ? <CircularProgress size={20} color="inherit" /> : <StopRounded />}
+          </Fab>
+        </Box>
+      </Box>
 
       {/* Chat panel */}
-      <div className="w-full md:w-80 bg-[#1a1a1a] border-l border-[#2a2a2a] flex flex-col">
-        <div className="p-4 border-b border-[#2a2a2a]">
-          <p className="text-white font-semibold flex items-center gap-2">
-            <Users size={16} className="text-[#00b8ff]" /> Live Chat
-          </p>
-        </div>
+      <Box
+        sx={{
+          width: { xs: '100%', md: 320 },
+          borderLeft: { md: '1px solid' },
+          borderTop: { xs: '1px solid', md: 'none' },
+          borderColor: 'divider',
+          bgcolor: 'background.paper',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <Typography variant="body1" fontWeight={600} p={2}>
+          Live Chat
+        </Typography>
+        <Divider />
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 min-h-0">
+        <Box flex={1} overflow="auto" p={1.5} sx={{ display: 'flex', flexDirection: 'column', gap: 1, minHeight: 0 }}>
           {chatMessages.length === 0 && (
-            <p className="text-gray-600 text-sm text-center mt-4">Chat will appear here</p>
+            <Typography variant="body2" color="text.secondary" textAlign="center" mt={2}>
+              Chat will appear here
+            </Typography>
           )}
           {chatMessages.map((msg, i) => (
-            <div key={i} className="text-sm">
-              <span className={`font-semibold mr-1 ${msg.isSelf ? 'text-[#00b8ff]' : 'text-white'}`}>
+            <Typography key={i} variant="body2">
+              <Typography
+                component="span"
+                variant="body2"
+                fontWeight={700}
+                color={msg.isSelf ? 'primary.main' : 'text.primary'}
+                mr={0.5}
+              >
                 {msg.sender?.display_name || msg.sender?.username}:
-              </span>
-              <span className="text-gray-300">{msg.message}</span>
-            </div>
+              </Typography>
+              <Typography component="span" variant="body2" color="text.secondary">
+                {msg.message}
+              </Typography>
+            </Typography>
           ))}
           <div ref={chatEndRef} />
-        </div>
+        </Box>
 
-        {/* Chat input */}
-        <div className="p-3 border-t border-[#2a2a2a] flex gap-2">
-          <input
+        <Stack direction="row" spacing={1} p={1.5} sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="Say something…"
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSendChat()}
-            placeholder="Say something…"
-            className="flex-1 bg-[#0a0a0a] border border-[#2a2a2a] rounded-xl px-3 py-2 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-[#00b8ff] transition-colors"
           />
-          <button
-            onClick={handleSendChat}
-            disabled={!chatInput.trim()}
-            className="bg-[#00b8ff] hover:bg-[#0099d4] disabled:opacity-40 text-white rounded-xl px-3 py-2 transition-colors"
-          >
-            <Send size={16} />
-          </button>
-        </div>
-      </div>
-    </div>
+          <IconButton color="primary" onClick={handleSendChat} disabled={!chatInput.trim()}>
+            <SendRounded />
+          </IconButton>
+        </Stack>
+      </Box>
+    </Box>
   );
 }

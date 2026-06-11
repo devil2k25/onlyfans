@@ -1,6 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Send, Users, Lock, Clock } from 'lucide-react';
+import {
+  Box, Typography, Stack, Chip, IconButton, TextField, Button,
+  CircularProgress, Divider, Dialog, DialogTitle, DialogContent,
+  DialogActions, Avatar,
+} from '@mui/material';
+import { SendRounded, VisibilityRounded, LockRounded, AccessTimeRounded } from '@mui/icons-material';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 import { getStream } from '../api/streams';
@@ -54,7 +59,6 @@ export default function WatchStream() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
 
-  // Fetch stream
   useEffect(() => {
     const fetchStream = async () => {
       try {
@@ -66,7 +70,6 @@ export default function WatchStream() {
     fetchStream();
   }, [id]);
 
-  // Join and handle WebRTC for live stream
   useEffect(() => {
     if (!socket || !streamData || streamData.status !== 'live' || joined) return;
 
@@ -77,7 +80,6 @@ export default function WatchStream() {
       const pc = new RTCPeerConnection(ICE_SERVERS);
       pcRef.current = pc;
 
-      // Add a transceiver to receive video/audio
       pc.addTransceiver('video', { direction: 'recvonly' });
       pc.addTransceiver('audio', { direction: 'recvonly' });
 
@@ -144,154 +146,224 @@ export default function WatchStream() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#0a0a0a]">
-        <div className="w-8 h-8 border-2 border-[#00b8ff] border-t-transparent rounded-full animate-spin" />
-      </div>
+      <Box display="flex" alignItems="center" justifyContent="center" minHeight="100vh">
+        <CircularProgress color="primary" />
+      </Box>
     );
   }
 
   if (!streamData) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#0a0a0a]">
-        <div className="text-center">
-          <p className="text-white text-lg font-semibold mb-2">Stream not found</p>
-          <Link to="/streams" className="text-[#00b8ff] hover:underline text-sm">Browse streams</Link>
-        </div>
-      </div>
+      <Box display="flex" alignItems="center" justifyContent="center" minHeight="100vh">
+        <Box textAlign="center">
+          <Typography variant="h6" gutterBottom>Stream not found</Typography>
+          <Typography component={Link} to="/streams" color="primary" variant="body2">
+            Browse streams
+          </Typography>
+        </Box>
+      </Box>
     );
   }
 
-  // Payment wall for paid streams
   const isPaidAndNotSubscribed = streamData.is_paid && !streamData.is_subscribed && streamData.creator_id !== user?.id;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex flex-col md:flex-row">
-      {/* Video area */}
-      <div className="relative flex-1 min-h-[50vh] md:min-h-screen bg-black flex items-center justify-center">
-
+    <Box display="flex" height="100vh" flexDirection={{ xs: 'column', md: 'row' }}>
+      {/* Video panel */}
+      <Box
+        flex={1}
+        position="relative"
+        bgcolor="black"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        sx={{ minHeight: { xs: '50vh', md: '100vh' } }}
+      >
+        {/* Scheduled countdown */}
         {streamData.status === 'scheduled' && (
-          <div className="text-center p-8">
-            <div className="w-16 h-16 rounded-full bg-[#00b8ff]/10 border border-[#00b8ff]/30 flex items-center justify-center mx-auto mb-4">
-              <Clock size={28} className="text-[#00b8ff]" />
-            </div>
-            <p className="text-white text-xl font-bold mb-2">{streamData.title}</p>
-            <p className="text-gray-400 text-sm mb-4">Stream starts in</p>
-            <p className="text-[#00b8ff] text-4xl font-mono font-bold">{countdown || 'Soon'}</p>
-            <p className="text-gray-500 text-sm mt-2">
+          <Box textAlign="center" p={4}>
+            <Box sx={{ width: 72, height: 72, borderRadius: '50%', bgcolor: 'rgba(0,184,255,0.1)', border: '1px solid rgba(0,184,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 2 }}>
+              <AccessTimeRounded color="primary" sx={{ fontSize: 32 }} />
+            </Box>
+            <Typography variant="h5" fontWeight="bold" color="white" gutterBottom>
+              {streamData.title}
+            </Typography>
+            <Typography variant="body2" color="grey.400" mb={2}>Stream starts in</Typography>
+            <Typography variant="h3" fontWeight="bold" color="primary" fontFamily="monospace">
+              {countdown || 'Soon'}
+            </Typography>
+            <Typography variant="body2" color="grey.500" mt={1}>
               {new Date(streamData.scheduled_at).toLocaleString(undefined, { weekday: 'long', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-            </p>
-          </div>
+            </Typography>
+          </Box>
         )}
 
+        {/* Payment wall */}
         {streamData.status === 'live' && isPaidAndNotSubscribed && (
-          <div className="text-center p-8">
-            <Lock size={48} className="text-gray-500 mx-auto mb-4" />
-            <p className="text-white text-xl font-bold mb-2">Paid Stream</p>
-            <p className="text-gray-400 mb-4">Subscribe to {streamData.creator?.display_name || streamData.creator?.username} to watch this stream.</p>
-            <Link
+          <Box textAlign="center" p={4}>
+            <LockRounded sx={{ fontSize: 64, color: 'grey.500', mb: 2 }} />
+            <Typography variant="h5" fontWeight="bold" color="white" gutterBottom>Paid Stream</Typography>
+            <Typography variant="body1" color="grey.400" mb={3}>
+              Subscribe to {streamData.creator?.display_name || streamData.creator?.username} to watch this stream.
+            </Typography>
+            <Button
+              variant="contained"
+              color="primary"
+              component={Link}
               to={`/${streamData.creator?.username}`}
-              className="bg-[#00b8ff] hover:bg-[#0099d4] text-white font-semibold rounded-xl px-6 py-3 transition-colors inline-block"
             >
               View Profile
-            </Link>
-          </div>
+            </Button>
+          </Box>
         )}
 
+        {/* Live video */}
         {streamData.status === 'live' && !isPaidAndNotSubscribed && (
           <>
-            <video
+            <Box
+              component="video"
               ref={remoteVideoRef}
               autoPlay
               playsInline
-              className="w-full h-full object-cover"
+              sx={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0, display: 'block' }}
             />
-            {/* Status badges */}
-            <div className="absolute top-4 left-4 flex items-center gap-2">
+
+            {/* Top badges */}
+            <Box sx={{ position: 'absolute', top: 12, left: 12, display: 'flex', gap: 1, zIndex: 1 }}>
               {!streamEnded ? (
-                <span className="bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE
-                </span>
+                <Chip
+                  label="LIVE"
+                  color="error"
+                  size="small"
+                  sx={{ fontWeight: 700 }}
+                />
               ) : (
-                <span className="bg-[#2a2a2a] text-gray-300 text-xs font-bold px-2.5 py-1 rounded-full">ENDED</span>
+                <Chip label="ENDED" size="small" sx={{ bgcolor: '#2a2a2a', color: 'grey.300', fontWeight: 700 }} />
               )}
-            </div>
+            </Box>
+
+            {/* Stream ended overlay */}
             {streamEnded && (
-              <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
-                <div className="text-center">
-                  <p className="text-white text-2xl font-bold mb-2">Stream Ended</p>
-                  <Link to="/streams" className="text-[#00b8ff] hover:underline text-sm">Browse other streams</Link>
-                </div>
-              </div>
+              <Box sx={{ position: 'absolute', inset: 0, bgcolor: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
+                <Box textAlign="center">
+                  <Typography variant="h4" fontWeight="bold" color="white" gutterBottom>Stream Ended</Typography>
+                  <Typography component={Link} to="/streams" color="primary" variant="body2">
+                    Browse other streams
+                  </Typography>
+                </Box>
+              </Box>
+            )}
+
+            {/* Stream info overlay */}
+            {!streamEnded && (
+              <Box sx={{ position: 'absolute', bottom: 16, left: 16, zIndex: 1 }}>
+                <Stack direction="row" alignItems="center" spacing={1} mb={0.5}>
+                  <Avatar
+                    src={streamData.creator?.avatar_url || undefined}
+                    sx={{ width: 28, height: 28, bgcolor: 'primary.main', fontSize: '0.75rem', fontWeight: 'bold' }}
+                  >
+                    {(streamData.creator?.display_name || streamData.creator?.username || 'C')[0].toUpperCase()}
+                  </Avatar>
+                  <Typography variant="body2" color="white" fontWeight={600} sx={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+                    {streamData.creator?.display_name || streamData.creator?.username}
+                  </Typography>
+                  {streamData.viewer_count != null && (
+                    <Chip
+                      label={`${streamData.viewer_count}`}
+                      size="small"
+                      icon={<VisibilityRounded sx={{ fontSize: 12, color: 'white !important' }} />}
+                      sx={{ bgcolor: 'rgba(0,0,0,0.6)', color: 'white', height: 22, fontSize: '0.7rem' }}
+                    />
+                  )}
+                </Stack>
+                <Typography variant="body1" fontWeight="bold" color="white" sx={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+                  {streamData.title}
+                </Typography>
+              </Box>
             )}
           </>
         )}
 
+        {/* Ended status */}
         {streamData.status === 'ended' && (
-          <div className="text-center p-8">
-            <p className="text-white text-xl font-bold mb-2">Stream Ended</p>
-            <Link to="/streams" className="text-[#00b8ff] hover:underline text-sm">Browse other streams</Link>
-          </div>
+          <Box textAlign="center" p={4}>
+            <Typography variant="h5" fontWeight="bold" color="white" gutterBottom>Stream Ended</Typography>
+            <Typography component={Link} to="/streams" color="primary" variant="body2">
+              Browse other streams
+            </Typography>
+          </Box>
         )}
-
-        {/* Stream title overlay */}
-        {streamData.status === 'live' && (
-          <div className="absolute bottom-4 left-4">
-            <p className="text-white font-bold drop-shadow">{streamData.title}</p>
-            <p className="text-gray-300 text-xs drop-shadow">
-              by {streamData.creator?.display_name || streamData.creator?.username}
-            </p>
-          </div>
-        )}
-      </div>
+      </Box>
 
       {/* Chat panel */}
-      <div className="w-full md:w-80 bg-[#1a1a1a] border-l border-[#2a2a2a] flex flex-col">
-        <div className="p-4 border-b border-[#2a2a2a]">
-          <p className="text-white font-semibold flex items-center gap-2">
-            <Users size={16} className="text-[#00b8ff]" />
-            {streamData.viewer_count != null ? `${streamData.viewer_count} watching` : 'Live Chat'}
-          </p>
-        </div>
+      <Box
+        sx={{
+          width: { xs: '100%', md: 320 },
+          borderLeft: { md: '1px solid' },
+          borderTop: { xs: '1px solid', md: 'none' },
+          borderColor: 'divider',
+          bgcolor: 'background.paper',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <Typography variant="body1" fontWeight={600} p={2}>
+          {streamData.viewer_count != null ? `${streamData.viewer_count} watching` : 'Live Chat'}
+        </Typography>
+        <Divider />
 
-        <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 min-h-0">
+        <Box flex={1} overflow="auto" p={1.5} sx={{ display: 'flex', flexDirection: 'column', gap: 1, minHeight: 0 }}>
           {chatMessages.length === 0 && (
-            <p className="text-gray-600 text-sm text-center mt-4">No messages yet</p>
+            <Typography variant="body2" color="text.secondary" textAlign="center" mt={2}>
+              No messages yet
+            </Typography>
           )}
           {chatMessages.map((msg, i) => (
-            <div key={i} className="text-sm">
-              <span className={`font-semibold mr-1 ${msg.isSelf ? 'text-[#00b8ff]' : 'text-white'}`}>
+            <Typography key={i} variant="body2">
+              <Typography
+                component="span"
+                variant="body2"
+                fontWeight={700}
+                color={msg.isSelf ? 'primary.main' : 'text.primary'}
+                mr={0.5}
+              >
                 {msg.sender?.display_name || msg.sender?.username}:
-              </span>
-              <span className="text-gray-300">{msg.message}</span>
-            </div>
+              </Typography>
+              <Typography component="span" variant="body2" color="text.secondary">
+                {msg.message}
+              </Typography>
+            </Typography>
           ))}
           <div ref={chatEndRef} />
-        </div>
+        </Box>
 
         {user ? (
-          <div className="p-3 border-t border-[#2a2a2a] flex gap-2">
-            <input
+          <Stack direction="row" spacing={1} p={1.5} sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="Say something…"
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSendChat()}
-              placeholder="Say something…"
               disabled={streamEnded || isPaidAndNotSubscribed}
-              className="flex-1 bg-[#0a0a0a] border border-[#2a2a2a] rounded-xl px-3 py-2 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-[#00b8ff] transition-colors disabled:opacity-40"
             />
-            <button
+            <IconButton
+              color="primary"
               onClick={handleSendChat}
               disabled={!chatInput.trim() || streamEnded || isPaidAndNotSubscribed}
-              className="bg-[#00b8ff] hover:bg-[#0099d4] disabled:opacity-40 text-white rounded-xl px-3 py-2 transition-colors"
             >
-              <Send size={16} />
-            </button>
-          </div>
+              <SendRounded />
+            </IconButton>
+          </Stack>
         ) : (
-          <div className="p-3 border-t border-[#2a2a2a] text-center">
-            <Link to="/login" className="text-[#00b8ff] hover:underline text-sm">Log in to chat</Link>
-          </div>
+          <Box p={2} sx={{ borderTop: '1px solid', borderColor: 'divider', textAlign: 'center' }}>
+            <Typography component={Link} to="/login" color="primary" variant="body2">
+              Log in to chat
+            </Typography>
+          </Box>
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }
