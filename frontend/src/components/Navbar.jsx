@@ -8,6 +8,9 @@ import {
   Settings,
   LogOut,
   User,
+  Tv,
+  Radio,
+  Calendar,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getConversations } from '../api/messages.js';
@@ -46,7 +49,12 @@ export default function Navbar() {
     { path: '/', icon: Home, label: 'Home' },
     { path: '/explore', icon: Compass, label: 'Explore' },
     { path: '/messages', icon: MessageCircle, label: 'Messages', badge: unreadCount },
-    ...(user?.is_creator ? [{ path: '/create', icon: PlusCircle, label: 'Create Post' }] : []),
+    { path: '/streams', icon: Tv, label: 'Live' },
+    ...(user?.is_creator ? [
+      { path: '/create', icon: PlusCircle, label: 'Create Post' },
+      { path: '/go-live', icon: Radio, label: 'Go Live' },
+    ] : []),
+    { path: '/bookings', icon: Calendar, label: 'Bookings' },
     { path: '/settings', icon: Settings, label: 'Settings' },
   ];
 

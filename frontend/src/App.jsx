@@ -1,6 +1,8 @@
 import React from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
+import { SocketProvider } from './context/SocketContext.jsx';
+import CallManager from './components/CallManager.jsx';
 import Navbar from './components/Navbar.jsx';
 import Home from './pages/Home.jsx';
 import Login from './pages/Login.jsx';
@@ -10,6 +12,11 @@ import Messages from './pages/Messages.jsx';
 import Settings from './pages/Settings.jsx';
 import CreatePost from './pages/CreatePost.jsx';
 import Profile from './pages/Profile.jsx';
+import BookCall from './pages/BookCall.jsx';
+import MyBookings from './pages/MyBookings.jsx';
+import GoLive from './pages/GoLive.jsx';
+import WatchStream from './pages/WatchStream.jsx';
+import Streams from './pages/Streams.jsx';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -96,6 +103,33 @@ function AppLayout() {
               </ProtectedRoute>
             }
           />
+          <Route path="/streams" element={<Streams />} />
+          <Route path="/stream/:id" element={<WatchStream />} />
+          <Route
+            path="/go-live"
+            element={
+              <ProtectedRoute>
+                <GoLive />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/bookings"
+            element={
+              <ProtectedRoute>
+                <MyBookings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/book/:creatorId"
+            element={
+              <ProtectedRoute>
+                <BookCall />
+              </ProtectedRoute>
+            }
+          />
+          {/* Profile route last to avoid catching other paths */}
           <Route path="/:username" element={<Profile />} />
         </Routes>
       </main>
@@ -106,7 +140,11 @@ function AppLayout() {
 export default function App() {
   return (
     <AuthProvider>
-      <AppLayout />
+      <SocketProvider>
+        <CallManager>
+          <AppLayout />
+        </CallManager>
+      </SocketProvider>
     </AuthProvider>
   );
 }

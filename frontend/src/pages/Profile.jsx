@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Settings, Grid, List, Lock } from 'lucide-react';
+import { Settings, Grid, List, Lock, Phone, Video } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getProfile } from '../api/users.js';
 import { getCreatorPosts, deletePost } from '../api/posts.js';
 import { checkSubscription } from '../api/subscriptions.js';
 import PostCard from '../components/PostCard.jsx';
 import SubscribeButton from '../components/SubscribeButton.jsx';
+import { useCallManager } from '../components/CallManager.jsx';
 
 export default function Profile() {
   const { username } = useParams();
@@ -24,6 +25,7 @@ export default function Profile() {
   const [error, setError] = useState('');
 
   const isOwnProfile = currentUser?.username === username;
+  const { initiateCall } = useCallManager() || {};
 
   useEffect(() => {
     loadProfile();
@@ -154,7 +156,7 @@ export default function Profile() {
             )}
           </div>
 
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
             {isOwnProfile ? (
               <Link
                 to="/settings"
@@ -165,11 +167,29 @@ export default function Profile() {
               </Link>
             ) : (
               currentUser && profile.is_creator && (
-                <SubscribeButton
-                  creator={profile}
-                  isSubscribed={isSubscribed}
-                  onSubscribeChange={setIsSubscribed}
-                />
+                <>
+                  <SubscribeButton
+                    creator={profile}
+                    isSubscribed={isSubscribed}
+                    onSubscribeChange={setIsSubscribed}
+                  />
+                  <button
+                    onClick={() => initiateCall?.(profile, 'audio')}
+                    title="Audio Call"
+                    className="flex items-center gap-1.5 bg-[#1a1a1a] border border-[#2a2a2a] hover:border-[#00b8ff] hover:text-[#00b8ff] text-white font-semibold rounded-lg px-3 py-2 transition-colors text-sm"
+                  >
+                    <Phone size={15} />
+                    Call
+                  </button>
+                  <button
+                    onClick={() => initiateCall?.(profile, 'video')}
+                    title="Video Call"
+                    className="flex items-center gap-1.5 bg-[#1a1a1a] border border-[#2a2a2a] hover:border-[#00b8ff] hover:text-[#00b8ff] text-white font-semibold rounded-lg px-3 py-2 transition-colors text-sm"
+                  >
+                    <Video size={15} />
+                    Video
+                  </button>
+                </>
               )
             )}
           </div>
