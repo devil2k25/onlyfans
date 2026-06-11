@@ -1,81 +1,122 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { Users } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import CardActions from '@mui/material/CardActions';
+import Avatar from '@mui/material/Avatar';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
+import SubscribeButton from './SubscribeButton.jsx';
 
 export default function CreatorCard({ creator, onSubscribe, isSubscribed }) {
+  const navigate = useNavigate();
   const price = Number(creator.subscription_price || 0);
 
   return (
-    <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl overflow-hidden hover:border-[#3a3a3a] transition-colors flex flex-col">
+    <Card
+      elevation={0}
+      sx={{
+        borderRadius: 3,
+        border: '1px solid #2a2a2a',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        cursor: 'pointer',
+        '&:hover': { borderColor: '#3a3a3a' },
+        transition: 'border-color 0.2s',
+      }}
+    >
       {/* Cover */}
-      <div className="relative h-28">
-        {creator.cover_url ? (
-          <img
-            src={creator.cover_url}
-            alt="cover"
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div
-            className="w-full h-full"
-            style={{
-              background: `linear-gradient(135deg, #00b8ff22 0%, #0044ff22 100%)`,
-              backgroundColor: '#111',
-            }}
-          />
-        )}
-        {/* Avatar overlapping */}
-        <div className="absolute -bottom-5 left-4">
-          {creator.avatar_url ? (
-            <img
-              src={creator.avatar_url}
-              alt={creator.display_name}
-              className="w-12 h-12 rounded-full object-cover border-2 border-[#1a1a1a]"
-            />
-          ) : (
-            <div className="w-12 h-12 rounded-full bg-[#00b8ff] flex items-center justify-center text-white font-bold text-lg border-2 border-[#1a1a1a]">
-              {((creator.display_name || creator.username || 'U')[0]).toUpperCase()}
-            </div>
-          )}
-        </div>
-      </div>
+      <Box
+        sx={{
+          height: 120,
+          backgroundImage: creator.cover_url
+            ? `url(${creator.cover_url})`
+            : 'linear-gradient(135deg, rgba(0,184,255,0.13) 0%, rgba(0,68,255,0.13) 100%)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          bgcolor: '#111',
+        }}
+      />
 
-      {/* Content */}
-      <div className="pt-7 px-4 pb-4 flex flex-col flex-1">
-        <Link to={`/${creator.username}`} className="hover:opacity-80 transition-opacity">
-          <h3 className="text-white font-semibold text-sm truncate">
-            {creator.display_name || creator.username}
-          </h3>
-          <p className="text-gray-500 text-xs truncate">@{creator.username}</p>
-        </Link>
+      <CardContent sx={{ pt: 0, flexGrow: 1 }}>
+        {/* Avatar overlapping cover */}
+        <Avatar
+          src={creator.avatar_url || undefined}
+          onClick={() => navigate(`/${creator.username}`)}
+          sx={{
+            width: 72,
+            height: 72,
+            border: '3px solid #1a1a1a',
+            mt: -5,
+            mb: 1,
+            bgcolor: 'primary.main',
+            color: '#000',
+            fontWeight: 700,
+            fontSize: '1.5rem',
+            cursor: 'pointer',
+          }}
+        >
+          {!creator.avatar_url && (creator.display_name || creator.username || 'U')[0].toUpperCase()}
+        </Avatar>
+
+        <Typography
+          variant="h6"
+          onClick={() => navigate(`/${creator.username}`)}
+          sx={{
+            fontWeight: 600,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            cursor: 'pointer',
+            '&:hover': { opacity: 0.8 },
+          }}
+        >
+          {creator.display_name || creator.username}
+        </Typography>
+
+        <Typography
+          variant="caption"
+          sx={{ color: 'text.secondary', display: 'block', mb: creator.bio ? 1 : 0 }}
+        >
+          @{creator.username}
+        </Typography>
 
         {creator.bio && (
-          <p className="text-gray-400 text-xs mt-2 line-clamp-2 leading-relaxed">{creator.bio}</p>
+          <Typography
+            variant="body2"
+            sx={{
+              color: 'text.secondary',
+              mt: 1,
+              overflow: 'hidden',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+            }}
+          >
+            {creator.bio}
+          </Typography>
         )}
 
-        <div className="flex items-center gap-1 mt-3 text-gray-500 text-xs">
-          <Users size={12} />
-          <span>{creator.subscriber_count || 0} subscribers</span>
-        </div>
-
-        <div className="mt-4 flex items-center justify-between">
-          <span className="text-[#00b8ff] text-sm font-semibold">
+        <Stack direction="row" spacing={2} sx={{ mt: 1.5 }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            {creator.subscriber_count || 0} subscribers
+          </Typography>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
             {price === 0 ? 'Free' : `$${price.toFixed(2)}/mo`}
-          </span>
-          {onSubscribe && (
-            <button
-              onClick={() => onSubscribe(creator)}
-              className={`text-xs font-semibold rounded-lg px-3 py-1.5 transition-colors ${
-                isSubscribed
-                  ? 'bg-[#2a2a2a] text-gray-300 hover:bg-[#333]'
-                  : 'bg-[#00b8ff] hover:bg-[#0099d4] text-white'
-              }`}
-            >
-              {isSubscribed ? 'Subscribed ✓' : price === 0 ? 'Follow Free' : `Subscribe`}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
+          </Typography>
+        </Stack>
+      </CardContent>
+
+      <CardActions sx={{ px: 2, pb: 2 }}>
+        <SubscribeButton
+          creator={creator}
+          isSubscribed={isSubscribed}
+          onSubscribeChange={(subscribed) => onSubscribe && onSubscribe(creator, subscribed)}
+          fullWidth
+        />
+      </CardActions>
+    </Card>
   );
 }

@@ -1,27 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, Check, X, Save, User, CreditCard, Shield } from 'lucide-react';
+import {
+  Box, Typography, Button, Card, CardContent, TextField, Stack,
+  Avatar, FormControlLabel, Switch, Snackbar, Alert, InputAdornment,
+  Divider, CircularProgress,
+} from '@mui/material';
+import { PersonRounded, StarRounded, ShieldRounded, CameraAltRounded } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext.jsx';
 import { updateProfile, updateAvatar, updateCover } from '../api/users.js';
-
-function Toast({ message, type, onClose }) {
-  useEffect(() => {
-    const t = setTimeout(onClose, 3500);
-    return () => clearTimeout(t);
-  }, [onClose]);
-
-  return (
-    <div
-      className={`fixed bottom-24 md:bottom-6 right-4 flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium shadow-lg z-50 ${
-        type === 'success'
-          ? 'bg-green-900/90 border border-green-700 text-green-300'
-          : 'bg-red-900/90 border border-red-700 text-red-300'
-      }`}
-    >
-      {type === 'success' ? <Check size={16} /> : <X size={16} />}
-      {message}
-    </div>
-  );
-}
 
 export default function Settings() {
   const { user, updateUser } = useAuth();
@@ -69,7 +54,6 @@ export default function Settings() {
     e.preventDefault();
     setSavingProfile(true);
     try {
-      // Upload avatar if changed
       if (avatarFile) {
         const fd = new FormData();
         fd.append('avatar', avatarFile);
@@ -79,7 +63,6 @@ export default function Settings() {
           setAvatarFile(null);
         }
       }
-      // Upload cover if changed
       if (coverFile) {
         const fd = new FormData();
         fd.append('cover', coverFile);
@@ -89,7 +72,6 @@ export default function Settings() {
           setCoverFile(null);
         }
       }
-      // Update profile text fields
       const res = await updateProfile({
         display_name: profileForm.display_name,
         bio: profileForm.bio,
@@ -130,243 +112,255 @@ export default function Settings() {
   const currentCover = coverPreview || user?.cover_url;
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6">
-      <h1 className="text-white text-xl font-bold mb-6">Settings</h1>
+    <Box maxWidth={680} mx="auto" px={3} py={3}>
+      <Typography variant="h5" fontWeight="bold" mb={3}>
+        Settings
+      </Typography>
 
-      {/* Profile Section */}
-      <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl overflow-hidden mb-6">
-        <div className="flex items-center gap-3 p-4 border-b border-[#2a2a2a]">
-          <User size={18} className="text-[#00b8ff]" />
-          <h2 className="text-white font-semibold">Profile</h2>
-        </div>
+      {/* Profile Card */}
+      <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', mb: 3 }}>
+        <CardContent sx={{ p: 3 }}>
+          <Stack direction="row" alignItems="center" spacing={1} mb={2.5}>
+            <PersonRounded color="primary" fontSize="small" />
+            <Typography variant="h6" fontWeight={600}>Profile</Typography>
+          </Stack>
 
-        <form onSubmit={handleSaveProfile} className="p-4 space-y-5">
-          {/* Cover Image */}
-          <div>
-            <label className="block text-gray-400 text-sm font-medium mb-2">Cover Image</label>
-            <div
-              className="relative w-full h-32 rounded-xl overflow-hidden cursor-pointer group border border-[#2a2a2a] hover:border-[#00b8ff] transition-colors"
+          <Box component="form" onSubmit={handleSaveProfile}>
+            {/* Cover image */}
+            <Box
               onClick={() => coverRef.current?.click()}
+              sx={{
+                position: 'relative',
+                width: '100%',
+                height: 120,
+                borderRadius: 2,
+                overflow: 'hidden',
+                cursor: 'pointer',
+                border: '1px solid',
+                borderColor: 'divider',
+                mb: 2,
+                backgroundImage: currentCover ? `url(${currentCover})` : undefined,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                bgcolor: currentCover ? undefined : 'background.default',
+                background: !currentCover
+                  ? 'linear-gradient(135deg, rgba(0,184,255,0.1) 0%, rgba(0,68,255,0.1) 100%)'
+                  : undefined,
+                '&:hover .cover-overlay': { opacity: 1 },
+              }}
             >
-              {currentCover ? (
-                <img src={currentCover} alt="cover" className="w-full h-full object-cover" />
-              ) : (
-                <div
-                  className="w-full h-full"
-                  style={{ background: 'linear-gradient(135deg, #00b8ff22 0%, #0044ff22 100%)', backgroundColor: '#111' }}
-                />
-              )}
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <div className="flex items-center gap-2 text-white text-sm font-medium">
-                  <Camera size={18} />
-                  Change Cover
-                </div>
-              </div>
-            </div>
-            <input
-              ref={coverRef}
-              type="file"
-              accept="image/*"
-              onChange={handleCoverChange}
-              className="hidden"
-            />
-            {coverFile && (
-              <p className="text-[#00b8ff] text-xs mt-1">{coverFile.name} selected</p>
-            )}
-          </div>
-
-          {/* Avatar */}
-          <div>
-            <label className="block text-gray-400 text-sm font-medium mb-2">Profile Photo</label>
-            <div className="flex items-center gap-4">
-              <div
-                className="relative w-16 h-16 rounded-full overflow-hidden cursor-pointer group border-2 border-[#2a2a2a] hover:border-[#00b8ff] transition-colors flex-shrink-0"
-                onClick={() => avatarRef.current?.click()}
+              <Box
+                className="cover-overlay"
+                sx={{
+                  position: 'absolute',
+                  inset: 0,
+                  bgcolor: 'rgba(0,0,0,0.5)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: 0,
+                  transition: 'opacity 0.2s',
+                }}
               >
-                {currentAvatar ? (
-                  <img src={currentAvatar} alt="avatar" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full bg-[#00b8ff] flex items-center justify-center text-white text-xl font-bold">
-                    {((user?.display_name || user?.username || 'U')[0]).toUpperCase()}
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Camera size={16} className="text-white" />
-                </div>
-              </div>
-              <div>
-                <button
-                  type="button"
-                  onClick={() => avatarRef.current?.click()}
-                  className="text-[#00b8ff] hover:text-white text-sm font-medium transition-colors"
-                >
-                  Upload new photo
-                </button>
-                <p className="text-gray-500 text-xs mt-0.5">JPG, PNG or GIF. Max 5MB.</p>
-              </div>
-            </div>
-            <input
-              ref={avatarRef}
-              type="file"
-              accept="image/*"
-              onChange={handleAvatarChange}
-              className="hidden"
-            />
-            {avatarFile && (
-              <p className="text-[#00b8ff] text-xs mt-1">{avatarFile.name} selected</p>
-            )}
-          </div>
+                <Stack direction="row" alignItems="center" spacing={1} color="white">
+                  <CameraAltRounded fontSize="small" />
+                  <Typography variant="body2" fontWeight={600}>Change Cover</Typography>
+                </Stack>
+              </Box>
+            </Box>
+            <input ref={coverRef} type="file" accept="image/*" onChange={handleCoverChange} style={{ display: 'none' }} />
 
-          <div>
-            <label className="block text-gray-400 text-sm font-medium mb-1.5">Display Name</label>
-            <input
-              type="text"
+            {/* Avatar */}
+            <Stack direction="row" alignItems="center" spacing={2} mb={2.5}>
+              <Box sx={{ position: 'relative', cursor: 'pointer' }} onClick={() => avatarRef.current?.click()}>
+                <Avatar
+                  src={currentAvatar || undefined}
+                  alt={user?.display_name || user?.username}
+                  sx={{
+                    width: 80,
+                    height: 80,
+                    bgcolor: 'primary.main',
+                    color: 'primary.contrastText',
+                    fontSize: '1.75rem',
+                    fontWeight: 'bold',
+                    border: '2px solid',
+                    borderColor: 'divider',
+                  }}
+                >
+                  {!currentAvatar && ((user?.display_name || user?.username || 'U')[0]).toUpperCase()}
+                </Avatar>
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    inset: 0,
+                    bgcolor: 'rgba(0,0,0,0.5)',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    opacity: 0,
+                    transition: 'opacity 0.2s',
+                    '&:hover': { opacity: 1 },
+                  }}
+                >
+                  <CameraAltRounded sx={{ color: 'white', fontSize: 18 }} />
+                </Box>
+              </Box>
+              <Stack spacing={0.5}>
+                <Button variant="outlined" size="small" onClick={() => avatarRef.current?.click()}>
+                  Change Avatar
+                </Button>
+                <Button variant="outlined" size="small" onClick={() => coverRef.current?.click()}>
+                  Change Cover
+                </Button>
+                {avatarFile && (
+                  <Typography variant="caption" color="primary">{avatarFile.name}</Typography>
+                )}
+              </Stack>
+            </Stack>
+            <input ref={avatarRef} type="file" accept="image/*" onChange={handleAvatarChange} style={{ display: 'none' }} />
+
+            <TextField
+              label="Display Name"
+              fullWidth
               value={profileForm.display_name}
               onChange={(e) => setProfileForm((p) => ({ ...p, display_name: e.target.value }))}
               placeholder="Your display name"
-              className="w-full bg-[#0a0a0a] border border-[#2a2a2a] text-white placeholder-gray-600 rounded-lg px-4 py-2.5 text-sm focus:border-[#00b8ff] focus:outline-none transition-colors"
+              sx={{ mb: 2 }}
             />
-          </div>
 
-          <div>
-            <label className="block text-gray-400 text-sm font-medium mb-1.5">Bio</label>
-            <textarea
+            <TextField
+              label="Bio"
+              fullWidth
+              multiline
+              rows={3}
               value={profileForm.bio}
               onChange={(e) => setProfileForm((p) => ({ ...p, bio: e.target.value }))}
               placeholder="Tell your fans about yourself..."
-              rows={3}
-              className="w-full bg-[#0a0a0a] border border-[#2a2a2a] text-white placeholder-gray-600 rounded-lg px-4 py-2.5 text-sm focus:border-[#00b8ff] focus:outline-none transition-colors resize-none"
+              sx={{ mb: 2.5 }}
             />
-            <p className="text-gray-600 text-xs mt-1 text-right">{profileForm.bio.length}/300</p>
-          </div>
 
-          <button
-            type="submit"
-            disabled={savingProfile}
-            className="flex items-center gap-2 bg-[#00b8ff] hover:bg-[#0099d4] text-white font-semibold rounded-lg px-5 py-2.5 transition-colors text-sm disabled:opacity-60"
-          >
-            {savingProfile ? (
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <Save size={16} />
-            )}
-            {savingProfile ? 'Saving...' : 'Save Profile'}
-          </button>
-        </form>
-      </div>
-
-      {/* Creator Settings */}
-      <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl overflow-hidden mb-6">
-        <div className="flex items-center gap-3 p-4 border-b border-[#2a2a2a]">
-          <CreditCard size={18} className="text-[#00b8ff]" />
-          <h2 className="text-white font-semibold">Creator Settings</h2>
-        </div>
-
-        <form onSubmit={handleSaveCreator} className="p-4 space-y-5">
-          {/* Is Creator Toggle */}
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-white text-sm font-medium">Creator Mode</p>
-              <p className="text-gray-500 text-xs mt-0.5">Enable to post content and accept subscribers</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setCreatorForm((p) => ({ ...p, is_creator: !p.is_creator }))}
-              className={`relative w-12 h-6 rounded-full transition-colors ${
-                creatorForm.is_creator ? 'bg-[#00b8ff]' : 'bg-[#3a3a3a]'
-              }`}
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              disabled={savingProfile}
+              startIcon={savingProfile ? <CircularProgress size={16} color="inherit" /> : null}
             >
-              <span
-                className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
-                  creatorForm.is_creator ? 'translate-x-7' : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </div>
+              {savingProfile ? 'Saving…' : 'Save Profile'}
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
 
-          {/* Subscription Price */}
-          {creatorForm.is_creator && (
-            <div>
-              <label className="block text-gray-400 text-sm font-medium mb-1.5">
-                Monthly Subscription Price (USD)
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
-                <input
-                  type="number"
-                  min="0"
-                  max="999"
-                  step="0.01"
-                  value={creatorForm.subscription_price}
-                  onChange={(e) => setCreatorForm((p) => ({ ...p, subscription_price: e.target.value }))}
-                  placeholder="0.00"
-                  className="w-full bg-[#0a0a0a] border border-[#2a2a2a] text-white placeholder-gray-600 rounded-lg pl-7 pr-4 py-2.5 text-sm focus:border-[#00b8ff] focus:outline-none transition-colors"
+      {/* Creator Settings Card */}
+      <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', mb: 3 }}>
+        <CardContent sx={{ p: 3 }}>
+          <Stack direction="row" alignItems="center" spacing={1} mb={2.5}>
+            <StarRounded color="primary" fontSize="small" />
+            <Typography variant="h6" fontWeight={600}>Creator Settings</Typography>
+          </Stack>
+
+          <Box component="form" onSubmit={handleSaveCreator}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={creatorForm.is_creator}
+                  onChange={(e) => setCreatorForm((p) => ({ ...p, is_creator: e.target.checked }))}
+                  color="primary"
                 />
-              </div>
-              <p className="text-gray-500 text-xs mt-1">Set to 0 for a free subscription</p>
-            </div>
-          )}
+              }
+              label={
+                <Box>
+                  <Typography variant="body2" fontWeight={600}>Creator Mode</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Enable to post content and accept subscribers
+                  </Typography>
+                </Box>
+              }
+              sx={{ mb: 2, alignItems: 'flex-start', ml: 0 }}
+            />
 
-          <button
-            type="submit"
-            disabled={savingCreator}
-            className="flex items-center gap-2 bg-[#00b8ff] hover:bg-[#0099d4] text-white font-semibold rounded-lg px-5 py-2.5 transition-colors text-sm disabled:opacity-60"
-          >
-            {savingCreator ? (
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <Save size={16} />
+            {creatorForm.is_creator && (
+              <TextField
+                type="number"
+                label="Monthly subscription price ($)"
+                fullWidth
+                inputProps={{ min: 0, max: 999, step: 0.01 }}
+                value={creatorForm.subscription_price}
+                onChange={(e) => setCreatorForm((p) => ({ ...p, subscription_price: e.target.value }))}
+                placeholder="0.00"
+                helperText="Set to 0 for a free subscription"
+                InputProps={{
+                  startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                }}
+                sx={{ mb: 2.5 }}
+              />
             )}
-            {savingCreator ? 'Saving...' : 'Save Creator Settings'}
-          </button>
-        </form>
-      </div>
 
-      {/* Account Section */}
-      <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl overflow-hidden">
-        <div className="flex items-center gap-3 p-4 border-b border-[#2a2a2a]">
-          <Shield size={18} className="text-[#00b8ff]" />
-          <h2 className="text-white font-semibold">Account</h2>
-        </div>
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              disabled={savingCreator}
+              startIcon={savingCreator ? <CircularProgress size={16} color="inherit" /> : null}
+            >
+              {savingCreator ? 'Saving…' : 'Save Creator Settings'}
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
 
-        <div className="p-4 space-y-4">
-          <div>
-            <label className="block text-gray-400 text-sm font-medium mb-1.5">Username</label>
-            <input
-              type="text"
-              value={`@${user?.username || ''}`}
-              readOnly
-              className="w-full bg-[#0a0a0a] border border-[#2a2a2a] text-gray-500 rounded-lg px-4 py-2.5 text-sm cursor-not-allowed"
-            />
-            <p className="text-gray-600 text-xs mt-1">Username cannot be changed</p>
-          </div>
+      {/* Account Card */}
+      <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
+        <CardContent sx={{ p: 3 }}>
+          <Stack direction="row" alignItems="center" spacing={1} mb={2.5}>
+            <ShieldRounded color="primary" fontSize="small" />
+            <Typography variant="h6" fontWeight={600}>Account</Typography>
+          </Stack>
 
-          <div>
-            <label className="block text-gray-400 text-sm font-medium mb-1.5">Email Address</label>
-            <input
-              type="email"
-              value={user?.email || ''}
-              readOnly
-              className="w-full bg-[#0a0a0a] border border-[#2a2a2a] text-gray-500 rounded-lg px-4 py-2.5 text-sm cursor-not-allowed"
-            />
-            <p className="text-gray-600 text-xs mt-1">Email cannot be changed</p>
-          </div>
+          <TextField
+            label="Username"
+            fullWidth
+            value={`@${user?.username || ''}`}
+            disabled
+            helperText="Username cannot be changed"
+            sx={{ mb: 2 }}
+          />
 
-          <div className="pt-2 border-t border-[#2a2a2a]">
-            <p className="text-gray-500 text-xs">
-              Account created: {user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
-            </p>
-          </div>
-        </div>
-      </div>
+          <TextField
+            label="Email Address"
+            type="email"
+            fullWidth
+            value={user?.email || ''}
+            disabled
+            helperText="Email cannot be changed"
+            sx={{ mb: 2 }}
+          />
 
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
+          <Divider sx={{ my: 1.5 }} />
+          <Typography variant="caption" color="text.secondary">
+            Account created:{' '}
+            {user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
+          </Typography>
+        </CardContent>
+      </Card>
+
+      <Snackbar
+        open={!!toast}
+        autoHideDuration={3500}
+        onClose={() => setToast(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert
           onClose={() => setToast(null)}
-        />
-      )}
-    </div>
+          severity={toast?.type || 'success'}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {toast?.message}
+        </Alert>
+      </Snackbar>
+    </Box>
   );
 }

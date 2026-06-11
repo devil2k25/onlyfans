@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Settings, Grid, List, Lock, Phone, Video } from 'lucide-react';
+import {
+  Box, Typography, Avatar, Button, Stack, Tabs, Tab, Divider,
+  CircularProgress, Chip, ImageList, ImageListItem, Skeleton,
+} from '@mui/material';
+import { PhoneRounded, VideocamRounded, LockOutlined, SettingsRounded, GridOnRounded, ListRounded } from '@mui/icons-material';
+import { alpha } from '@mui/material/styles';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getProfile } from '../api/users.js';
 import { getCreatorPosts, deletePost } from '../api/posts.js';
@@ -19,7 +24,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [postsLoading, setPostsLoading] = useState(true);
   const [isSubscribed, setIsSubscribed] = useState(false);
-  const [activeTab, setActiveTab] = useState('posts');
+  const [activeTab, setActiveTab] = useState(0);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState('');
@@ -44,7 +49,6 @@ export default function Profile() {
       const res = await getProfile(username);
       if (res.data.success) {
         setProfile(res.data.data);
-        // Check subscription status if logged in and not own profile
         if (currentUser && currentUser.username !== username) {
           try {
             const subRes = await checkSubscription(res.data.data.id);
@@ -89,196 +93,208 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <div className="animate-pulse">
-        <div className="h-48 bg-[#1a1a1a]" />
-        <div className="max-w-2xl mx-auto px-4">
-          <div className="flex items-end gap-4 -mt-12 mb-4">
-            <div className="w-24 h-24 rounded-full bg-[#2a2a2a] border-4 border-[#0a0a0a]" />
-          </div>
-          <div className="h-5 bg-[#2a2a2a] rounded w-40 mb-2" />
-          <div className="h-3 bg-[#2a2a2a] rounded w-24 mb-4" />
-          <div className="h-3 bg-[#2a2a2a] rounded w-full mb-1" />
-          <div className="h-3 bg-[#2a2a2a] rounded w-3/4" />
-        </div>
-      </div>
+      <Box>
+        <Skeleton variant="rectangular" height={280} />
+        <Box maxWidth={680} mx="auto" px={3}>
+          <Stack direction="row" alignItems="flex-end" justifyContent="space-between" sx={{ mt: '-48px', mb: 2 }}>
+            <Skeleton variant="circular" width={120} height={120} />
+          </Stack>
+          <Skeleton variant="text" width={160} height={28} sx={{ mb: 1 }} />
+          <Skeleton variant="text" width={100} height={18} sx={{ mb: 1.5 }} />
+          <Skeleton variant="text" width="100%" />
+          <Skeleton variant="text" width="75%" />
+        </Box>
+      </Box>
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
-        <h2 className="text-white text-xl font-semibold mb-2">User not found</h2>
-        <p className="text-gray-400 text-sm mb-6">The profile @{username} doesn't exist.</p>
-        <Link to="/explore" className="text-[#00b8ff] hover:underline text-sm">
-          Explore creators →
-        </Link>
-      </div>
+      <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" minHeight="60vh" px={2} textAlign="center">
+        <Typography variant="h6" gutterBottom>User not found</Typography>
+        <Typography variant="body2" color="text.secondary" mb={3}>
+          The profile @{username} doesn&apos;t exist.
+        </Typography>
+        <Button component={Link} to="/explore" color="primary">
+          Explore creators
+        </Button>
+      </Box>
     );
   }
 
   if (!profile) return null;
 
   return (
-    <div className="min-h-screen">
-      {/* Cover Image */}
-      <div className="relative h-48 md:h-64">
-        {profile.cover_url ? (
-          <img
-            src={profile.cover_url}
-            alt="cover"
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div
-            className="w-full h-full"
-            style={{
-              background: 'linear-gradient(135deg, #00b8ff33 0%, #0044ff22 50%, #001133 100%)',
-              backgroundColor: '#0f0f1a',
-            }}
-          />
-        )}
-      </div>
+    <Box>
+      {/* Cover */}
+      <Box
+        height={280}
+        sx={{
+          backgroundImage: profile.cover_url ? `url(${profile.cover_url})` : undefined,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          background: profile.cover_url
+            ? undefined
+            : 'linear-gradient(135deg, rgba(0,184,255,0.2) 0%, rgba(0,68,255,0.13) 50%, #001133 100%)',
+          backgroundColor: profile.cover_url ? undefined : '#0f0f1a',
+        }}
+      />
 
-      <div className="max-w-2xl mx-auto px-4">
-        {/* Avatar + Actions row */}
-        <div className="flex items-end justify-between -mt-14 mb-4">
-          <div className="relative">
-            {profile.avatar_url ? (
-              <img
-                src={profile.avatar_url}
-                alt={profile.display_name}
-                className="w-24 h-24 rounded-full object-cover border-4 border-[#0a0a0a]"
-              />
-            ) : (
-              <div className="w-24 h-24 rounded-full bg-[#00b8ff] flex items-center justify-center text-white text-3xl font-bold border-4 border-[#0a0a0a]">
-                {((profile.display_name || profile.username || 'U')[0]).toUpperCase()}
-              </div>
-            )}
-          </div>
+      <Box maxWidth={680} mx="auto">
+        {/* Avatar + actions */}
+        <Box px={3}>
+          <Stack direction="row" justifyContent="space-between" alignItems="flex-end" sx={{ mt: '-60px', mb: 2 }}>
+            <Avatar
+              src={profile.avatar_url || undefined}
+              alt={profile.display_name || profile.username}
+              sx={{
+                width: 120,
+                height: 120,
+                fontSize: '2.5rem',
+                fontWeight: 'bold',
+                border: '3px solid',
+                borderColor: 'background.paper',
+                bgcolor: 'primary.main',
+                color: 'primary.contrastText',
+              }}
+            >
+              {!profile.avatar_url && ((profile.display_name || profile.username || 'U')[0]).toUpperCase()}
+            </Avatar>
 
-          <div className="flex items-center gap-2 mb-2 flex-wrap">
-            {isOwnProfile ? (
-              <Link
-                to="/settings"
-                className="flex items-center gap-2 bg-[#1a1a1a] border border-[#2a2a2a] text-white hover:border-[#3a3a3a] font-semibold rounded-lg px-4 py-2 transition-colors text-sm"
-              >
-                <Settings size={16} />
-                Edit Profile
-              </Link>
-            ) : (
-              currentUser && profile.is_creator && (
-                <>
-                  <SubscribeButton
-                    creator={profile}
-                    isSubscribed={isSubscribed}
-                    onSubscribeChange={setIsSubscribed}
-                  />
-                  <button
-                    onClick={() => initiateCall?.(profile, 'audio')}
-                    title="Audio Call"
-                    className="flex items-center gap-1.5 bg-[#1a1a1a] border border-[#2a2a2a] hover:border-[#00b8ff] hover:text-[#00b8ff] text-white font-semibold rounded-lg px-3 py-2 transition-colors text-sm"
-                  >
-                    <Phone size={15} />
-                    Call
-                  </button>
-                  <button
-                    onClick={() => initiateCall?.(profile, 'video')}
-                    title="Video Call"
-                    className="flex items-center gap-1.5 bg-[#1a1a1a] border border-[#2a2a2a] hover:border-[#00b8ff] hover:text-[#00b8ff] text-white font-semibold rounded-lg px-3 py-2 transition-colors text-sm"
-                  >
-                    <Video size={15} />
-                    Video
-                  </button>
-                </>
-              )
-            )}
-          </div>
-        </div>
+            <Stack direction="row" spacing={1} alignItems="center" pb={1}>
+              {isOwnProfile ? (
+                <Button
+                  variant="outlined"
+                  size="small"
+                  component={Link}
+                  to="/settings"
+                  startIcon={<SettingsRounded fontSize="small" />}
+                >
+                  Edit Profile
+                </Button>
+              ) : (
+                currentUser && profile.is_creator && (
+                  <>
+                    <SubscribeButton
+                      creator={profile}
+                      isSubscribed={isSubscribed}
+                      onSubscribeChange={setIsSubscribed}
+                    />
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={() => initiateCall?.(profile, 'audio')}
+                      title="Audio Call"
+                      sx={{ minWidth: 0, px: 1.5 }}
+                    >
+                      <PhoneRounded fontSize="small" />
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={() => initiateCall?.(profile, 'video')}
+                      title="Video Call"
+                      sx={{ minWidth: 0, px: 1.5 }}
+                    >
+                      <VideocamRounded fontSize="small" />
+                    </Button>
+                  </>
+                )
+              )}
+            </Stack>
+          </Stack>
 
-        {/* Profile Info */}
-        <div className="mb-6">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-white text-xl font-bold">{profile.display_name || profile.username}</h1>
+          {/* Profile info */}
+          <Stack direction="row" alignItems="center" spacing={1} mb={0.5}>
+            <Typography variant="h5" fontWeight="bold">
+              {profile.display_name || profile.username}
+            </Typography>
             {profile.is_creator && (
-              <span className="bg-[#00b8ff]/20 text-[#00b8ff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                Creator
-              </span>
+              <Chip
+                label="Creator"
+                size="small"
+                sx={{
+                  bgcolor: (t) => alpha(t.palette.primary.main, 0.15),
+                  color: 'primary.main',
+                  fontWeight: 600,
+                  fontSize: '0.7rem',
+                }}
+              />
             )}
-          </div>
-          <p className="text-gray-400 text-sm">@{profile.username}</p>
-
+          </Stack>
+          <Typography variant="body2" color="text.secondary">
+            @{profile.username}
+          </Typography>
           {profile.bio && (
-            <p className="text-gray-300 text-sm mt-3 leading-relaxed">{profile.bio}</p>
+            <Typography variant="body2" color="text.secondary" mt={1} sx={{ lineHeight: 1.6 }}>
+              {profile.bio}
+            </Typography>
           )}
 
           {/* Stats */}
-          <div className="flex items-center gap-6 mt-4">
-            <div className="text-center">
-              <p className="text-white font-bold text-lg">{profile.post_count || posts.length || 0}</p>
-              <p className="text-gray-500 text-xs">Posts</p>
-            </div>
-            <div className="text-center">
-              <p className="text-white font-bold text-lg">{profile.subscriber_count || 0}</p>
-              <p className="text-gray-500 text-xs">Subscribers</p>
-            </div>
+          <Stack direction="row" spacing={3} mt={2}>
+            <Box>
+              <Typography variant="body1" fontWeight="bold">{profile.post_count || posts.length || 0}</Typography>
+              <Typography variant="caption" color="text.secondary">Posts</Typography>
+            </Box>
+            <Box>
+              <Typography variant="body1" fontWeight="bold">{profile.subscriber_count || 0}</Typography>
+              <Typography variant="caption" color="text.secondary">Subscribers</Typography>
+            </Box>
             {profile.is_creator && profile.subscription_price != null && (
-              <div className="text-center">
-                <p className="text-[#00b8ff] font-bold text-lg">
+              <Box>
+                <Typography variant="body1" fontWeight="bold" color="primary">
                   {Number(profile.subscription_price) === 0 ? 'Free' : `$${Number(profile.subscription_price).toFixed(2)}`}
-                </p>
-                <p className="text-gray-500 text-xs">per month</p>
-              </div>
+                </Typography>
+                <Typography variant="caption" color="text.secondary">per month</Typography>
+              </Box>
             )}
-          </div>
-        </div>
+          </Stack>
+        </Box>
+
+        <Divider sx={{ mt: 2 }} />
 
         {/* Tabs */}
         {profile.is_creator && (
-          <div className="flex border-b border-[#2a2a2a] mb-6">
-            <button
-              onClick={() => setActiveTab('posts')}
-              className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold border-b-2 transition-colors ${
-                activeTab === 'posts'
-                  ? 'border-[#00b8ff] text-[#00b8ff]'
-                  : 'border-transparent text-gray-400 hover:text-white'
-              }`}
-            >
-              <List size={16} />
-              Posts
-            </button>
-            <button
-              onClick={() => setActiveTab('media')}
-              className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold border-b-2 transition-colors ${
-                activeTab === 'media'
-                  ? 'border-[#00b8ff] text-[#00b8ff]'
-                  : 'border-transparent text-gray-400 hover:text-white'
-              }`}
-            >
-              <Grid size={16} />
-              Media
-            </button>
-          </div>
+          <Tabs
+            value={activeTab}
+            onChange={(_, v) => setActiveTab(v)}
+            sx={{ px: 3 }}
+            textColor="primary"
+            indicatorColor="primary"
+          >
+            <Tab icon={<ListRounded fontSize="small" />} iconPosition="start" label="Posts" />
+            <Tab icon={<GridOnRounded fontSize="small" />} iconPosition="start" label="Media" />
+          </Tabs>
         )}
 
+        <Divider />
+
         {/* Posts Tab */}
-        {activeTab === 'posts' && (
-          <div>
+        {activeTab === 0 && (
+          <Box px={0}>
             {postsLoading && posts.length === 0 ? (
-              <div className="flex justify-center py-12">
-                <div className="w-8 h-8 border-2 border-[#00b8ff] border-t-transparent rounded-full animate-spin" />
-              </div>
+              <Box display="flex" justifyContent="center" py={6}>
+                <CircularProgress color="primary" />
+              </Box>
             ) : posts.length === 0 ? (
-              <div className="text-center py-16">
-                <p className="text-gray-400 text-base font-semibold mb-2">No posts yet</p>
+              <Box textAlign="center" py={8}>
+                <Typography variant="body1" color="text.secondary" fontWeight={600} mb={1}>
+                  No posts yet
+                </Typography>
                 {isOwnProfile && profile.is_creator && (
-                  <Link
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    size="small"
+                    component={Link}
                     to="/create"
-                    className="inline-block mt-2 bg-[#00b8ff] hover:bg-[#0099d4] text-white font-semibold rounded-lg px-5 py-2 text-sm transition-colors"
+                    sx={{ mt: 1 }}
                   >
                     Create your first post
-                  </Link>
+                  </Button>
                 )}
-              </div>
+              </Box>
             ) : (
               <>
                 {posts.map((post) => (
@@ -291,69 +307,95 @@ export default function Profile() {
                   />
                 ))}
                 {hasMore && (
-                  <div className="flex justify-center py-4 mb-6">
-                    <button
+                  <Box display="flex" justifyContent="center" py={3}>
+                    <Button
+                      variant="outlined"
                       onClick={() => loadPosts(page + 1, true)}
                       disabled={postsLoading}
-                      className="bg-[#1a1a1a] border border-[#2a2a2a] text-white hover:border-[#00b8ff] hover:text-[#00b8ff] font-semibold rounded-lg px-6 py-2.5 transition-colors text-sm disabled:opacity-50"
+                      startIcon={postsLoading ? <CircularProgress size={16} color="inherit" /> : null}
                     >
                       Load More
-                    </button>
-                  </div>
+                    </Button>
+                  </Box>
                 )}
               </>
             )}
-          </div>
+          </Box>
         )}
 
         {/* Media Tab */}
-        {activeTab === 'media' && (
-          <div className="mb-8">
+        {activeTab === 1 && (
+          <Box px={3} pb={4} mt={2}>
             {mediaPosts.length === 0 ? (
-              <div className="text-center py-16">
-                <p className="text-gray-400 text-base font-semibold">No media yet</p>
-              </div>
+              <Box textAlign="center" py={8}>
+                <Typography variant="body1" color="text.secondary" fontWeight={600}>
+                  No media yet
+                </Typography>
+              </Box>
             ) : (
-              <div className="grid grid-cols-3 gap-1">
+              <ImageList cols={3} gap={4}>
                 {mediaPosts.map((post) => {
                   const media = post.media[0];
                   const locked = !post.is_free && !isSubscribed && !isOwnProfile;
                   return (
-                    <div
+                    <ImageListItem
                       key={post.id}
-                      className="relative aspect-square bg-[#1a1a1a] overflow-hidden cursor-pointer group"
-                      onClick={() => !locked && setActiveTab('posts')}
+                      sx={{
+                        aspectRatio: '1',
+                        borderRadius: 2,
+                        overflow: 'hidden',
+                        cursor: locked ? 'default' : 'pointer',
+                        bgcolor: 'background.paper',
+                        position: 'relative',
+                      }}
+                      onClick={() => !locked && setActiveTab(0)}
                     >
                       {locked ? (
-                        <div className="absolute inset-0 flex items-center justify-center bg-[#111]">
-                          <Lock size={20} className="text-gray-500" />
-                        </div>
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            inset: 0,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            bgcolor: '#111',
+                          }}
+                        >
+                          <LockOutlined sx={{ color: 'text.secondary' }} />
+                        </Box>
                       ) : media?.type === 'video' ? (
-                        <div className="absolute inset-0 bg-[#111] flex items-center justify-center">
-                          <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center">
-                            <svg className="w-4 h-4 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                        <Box sx={{ position: 'absolute', inset: 0, bgcolor: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Box sx={{ width: 40, height: 40, borderRadius: '50%', bgcolor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Box component="svg" sx={{ width: 16, height: 16, fill: 'white', ml: 0.5 }} viewBox="0 0 24 24">
                               <path d="M8 5v14l11-7z" />
-                            </svg>
-                          </div>
+                            </Box>
+                          </Box>
                           {media.url && (
-                            <video src={media.url} className="absolute inset-0 w-full h-full object-cover opacity-60" />
+                            <Box component="video" src={media.url} sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }} />
                           )}
-                        </div>
+                        </Box>
                       ) : (
-                        <img
+                        <Box
+                          component="img"
                           src={media.url}
                           alt="media"
-                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                          sx={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            transition: 'transform 0.2s',
+                            '&:hover': { transform: 'scale(1.05)' },
+                          }}
                         />
                       )}
-                    </div>
+                    </ImageListItem>
                   );
                 })}
-              </div>
+              </ImageList>
             )}
-          </div>
+          </Box>
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

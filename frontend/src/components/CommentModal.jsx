@@ -1,5 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send } from 'lucide-react';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import Box from '@mui/material/Box';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemAvatar from '@mui/material/ListItemAvatar';
+import ListItemText from '@mui/material/ListItemText';
+import Avatar from '@mui/material/Avatar';
+import Typography from '@mui/material/Typography';
+import IconButton from '@mui/material/IconButton';
+import TextField from '@mui/material/TextField';
+import CircularProgress from '@mui/material/CircularProgress';
+import CloseIcon from '@mui/icons-material/Close';
+import SendRoundedIcon from '@mui/icons-material/SendRounded';
 import { getComments, addComment } from '../api/posts.js';
 
 function timeAgo(dateStr) {
@@ -21,9 +35,6 @@ export default function CommentModal({ postId, currentUser, onClose }) {
 
   useEffect(() => {
     fetchComments();
-    // Prevent body scroll
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = ''; };
   }, []);
 
   const fetchComments = async () => {
@@ -53,99 +64,146 @@ export default function CommentModal({ postId, currentUser, onClose }) {
   };
 
   return (
-    <div
-      className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-0 md:p-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+    <Dialog
+      open
+      onClose={onClose}
+      fullWidth
+      maxWidth="sm"
+      PaperProps={{
+        sx: {
+          bgcolor: '#1a1a1a',
+          backgroundImage: 'none',
+          border: '1px solid #2a2a2a',
+          display: 'flex',
+          flexDirection: 'column',
+          maxHeight: '80vh',
+        },
+      }}
     >
-      <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-t-2xl md:rounded-2xl w-full md:max-w-lg max-h-[80vh] flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-[#2a2a2a]">
-          <h3 className="text-white font-semibold">Comments</h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors p-1"
-          >
-            <X size={20} />
-          </button>
-        </div>
+      <DialogTitle
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          borderBottom: '1px solid #2a2a2a',
+          py: 1.5,
+          px: 2,
+        }}
+      >
+        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+          Comments
+        </Typography>
+        <IconButton size="small" onClick={onClose} sx={{ color: 'text.secondary' }}>
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </DialogTitle>
 
-        {/* Comments List */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {loading ? (
-            <div className="flex justify-center py-8">
-              <div className="w-6 h-6 border-2 border-[#00b8ff] border-t-transparent rounded-full animate-spin" />
-            </div>
-          ) : comments.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-500 text-sm">No comments yet. Be the first!</p>
-            </div>
-          ) : (
-            comments.map((comment) => (
-              <div key={comment.id} className="flex gap-3">
-                {comment.user?.avatar_url ? (
-                  <img
-                    src={comment.user.avatar_url}
-                    alt={comment.user.display_name}
-                    className="w-8 h-8 rounded-full object-cover flex-shrink-0"
-                  />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-[#00b8ff] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                    {((comment.user?.display_name || comment.user?.username || 'U')[0]).toUpperCase()}
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-white text-sm font-semibold">
-                      {comment.user?.display_name || comment.user?.username}
-                    </span>
-                    <span className="text-gray-500 text-xs">{timeAgo(comment.created_at)}</span>
-                  </div>
-                  <p className="text-gray-300 text-sm mt-0.5 break-words">{comment.content}</p>
-                </div>
-              </div>
-            ))
-          )}
-          <div ref={bottomRef} />
-        </div>
-
-        {/* Input */}
-        {currentUser && (
-          <form
-            onSubmit={handleSubmit}
-            className="p-4 border-t border-[#2a2a2a] flex items-center gap-3"
-          >
-            {currentUser.avatar_url ? (
-              <img
-                src={currentUser.avatar_url}
-                alt={currentUser.display_name}
-                className="w-8 h-8 rounded-full object-cover flex-shrink-0"
-              />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-[#00b8ff] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                {((currentUser.display_name || currentUser.username || 'U')[0]).toUpperCase()}
-              </div>
-            )}
-            <input
-              type="text"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder="Add a comment..."
-              className="flex-1 bg-[#2a2a2a] text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm border border-[#3a3a3a] focus:border-[#00b8ff] focus:outline-none"
-            />
-            <button
-              type="submit"
-              disabled={!text.trim() || submitting}
-              className="text-[#00b8ff] hover:text-white disabled:text-gray-600 transition-colors p-1"
-            >
-              {submitting ? (
-                <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <Send size={20} />
-              )}
-            </button>
-          </form>
+      <DialogContent
+        sx={{
+          p: 0,
+          flexGrow: 1,
+          overflowY: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+            <CircularProgress size={24} color="primary" />
+          </Box>
+        ) : comments.length === 0 ? (
+          <Box sx={{ textAlign: 'center', py: 6 }}>
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              No comments yet. Be the first!
+            </Typography>
+          </Box>
+        ) : (
+          <List disablePadding>
+            {comments.map((comment) => (
+              <ListItem key={comment.id} alignItems="flex-start" sx={{ px: 2, py: 1.5 }}>
+                <ListItemAvatar sx={{ minWidth: 44 }}>
+                  <Avatar
+                    src={comment.user?.avatar_url || undefined}
+                    sx={{ width: 32, height: 32, bgcolor: 'primary.main', color: '#000', fontSize: '0.8rem', fontWeight: 700 }}
+                  >
+                    {!comment.user?.avatar_url &&
+                      (comment.user?.display_name || comment.user?.username || 'U')[0].toUpperCase()}
+                  </Avatar>
+                </ListItemAvatar>
+                <ListItemText
+                  primary={
+                    <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                        {comment.user?.display_name || comment.user?.username}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                        {timeAgo(comment.created_at)}
+                      </Typography>
+                    </Box>
+                  }
+                  secondary={
+                    <Typography
+                      variant="body2"
+                      sx={{ color: 'text.secondary', mt: 0.25, wordBreak: 'break-word' }}
+                    >
+                      {comment.content}
+                    </Typography>
+                  }
+                />
+              </ListItem>
+            ))}
+            <div ref={bottomRef} />
+          </List>
         )}
-      </div>
-    </div>
+      </DialogContent>
+
+      {/* Sticky comment input */}
+      {currentUser && (
+        <Box
+          component="form"
+          onSubmit={handleSubmit}
+          sx={{
+            display: 'flex',
+            alignItems: 'flex-end',
+            gap: 1,
+            px: 2,
+            py: 1.5,
+            borderTop: '1px solid #2a2a2a',
+          }}
+        >
+          <TextField
+            multiline
+            rows={2}
+            fullWidth
+            placeholder="Add a comment..."
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            size="small"
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                bgcolor: '#2a2a2a',
+              },
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSubmit(e);
+              }
+            }}
+          />
+          <IconButton
+            type="submit"
+            disabled={!text.trim() || submitting}
+            sx={{ color: text.trim() ? 'primary.main' : 'text.disabled', mb: 0.5 }}
+          >
+            {submitting ? (
+              <CircularProgress size={20} color="primary" />
+            ) : (
+              <SendRoundedIcon />
+            )}
+          </IconButton>
+        </Box>
+      )}
+    </Dialog>
   );
 }

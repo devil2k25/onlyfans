@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { CheckCircle } from 'lucide-react';
+import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
+import Box from '@mui/material/Box';
 import { subscribe, unsubscribe } from '../api/subscriptions.js';
 
-export default function SubscribeButton({ creator, isSubscribed: initialSubscribed, onSubscribeChange }) {
+export default function SubscribeButton({ creator, isSubscribed: initialSubscribed, onSubscribeChange, fullWidth }) {
   const [subscribed, setSubscribed] = useState(initialSubscribed);
   const [loading, setLoading] = useState(false);
 
@@ -29,37 +31,41 @@ export default function SubscribeButton({ creator, isSubscribed: initialSubscrib
 
   if (subscribed) {
     return (
-      <button
+      <Button
         onClick={handleClick}
         disabled={loading}
-        className="flex items-center gap-2 bg-[#2a2a2a] hover:bg-red-900/30 hover:text-red-400 text-gray-300 font-semibold rounded-lg px-4 py-2 transition-colors text-sm disabled:opacity-50"
+        variant="outlined"
+        fullWidth={fullWidth}
+        sx={{
+          color: '#4caf50',
+          borderColor: '#4caf50',
+          '&:hover': { borderColor: '#f44336', color: '#f44336', bgcolor: 'rgba(244,67,54,0.08)' },
+        }}
+        startIcon={
+          loading ? <CircularProgress size={16} sx={{ color: 'inherit' }} /> : null
+        }
       >
-        {loading ? (
-          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-        ) : (
-          <CheckCircle size={16} className="text-[#00b8ff]" />
-        )}
-        <span>{loading ? 'Processing...' : 'Subscribed ✓'}</span>
-      </button>
+        {loading ? 'Processing...' : 'Subscribed ✓'}
+      </Button>
     );
   }
 
   return (
-    <button
+    <Button
       onClick={handleClick}
       disabled={loading}
-      className="flex items-center gap-2 bg-[#00b8ff] hover:bg-[#0099d4] text-white font-semibold rounded-lg px-4 py-2 transition-colors text-sm disabled:opacity-50"
+      variant="contained"
+      color="primary"
+      fullWidth={fullWidth}
+      startIcon={
+        loading ? <CircularProgress size={16} sx={{ color: 'inherit' }} /> : null
+      }
     >
-      {loading ? (
-        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-      ) : null}
-      <span>
-        {loading
-          ? 'Processing...'
-          : price === 0
-          ? 'Follow Free'
-          : `Subscribe · $${price.toFixed(2)}/mo`}
-      </span>
-    </button>
+      {loading
+        ? 'Processing...'
+        : price === 0
+        ? 'Follow Free'
+        : `Subscribe · $${price.toFixed(2)}/mo`}
+    </Button>
   );
 }

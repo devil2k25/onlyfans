@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
-import { Compass, RefreshCw } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Box, Typography, Button, Stack, CircularProgress, Skeleton,
+} from '@mui/material';
+import { RssFeedRounded } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext.jsx';
 import PostCard from '../components/PostCard.jsx';
-import { getFeed } from '../api/posts.js';
-import { deletePost } from '../api/posts.js';
+import { getFeed, deletePost } from '../api/posts.js';
 import { checkSubscription } from '../api/subscriptions.js';
 
 export default function Home() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -25,7 +28,6 @@ export default function Home() {
         const newPosts = res.data.data || [];
         setPosts((prev) => append ? [...prev, ...newPosts] : newPosts);
         setHasMore(newPosts.length >= 10);
-        // Track subscription status by creator
         const subs = {};
         newPosts.forEach((p) => {
           if (p.creator_id) subs[p.creator_id] = p.is_subscribed ?? false;
@@ -55,65 +57,73 @@ export default function Home() {
     } catch {}
   };
 
-  // The onUnlike callback doubles as delete handler if second arg is true
   const handleUnlikeOrDelete = (postId, isDelete) => {
     if (isDelete) handleDelete(postId);
   };
 
   if (loading) {
     return (
-      <div className="max-w-xl mx-auto px-4 py-6">
+      <Box maxWidth={680} mx="auto" px={2} py={3}>
         {[1, 2, 3].map((i) => (
-          <div key={i} className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl overflow-hidden mb-4 animate-pulse">
-            <div className="flex items-center gap-3 p-4">
-              <div className="w-10 h-10 rounded-full bg-[#2a2a2a]" />
-              <div className="flex-1">
-                <div className="h-3 bg-[#2a2a2a] rounded w-32 mb-2" />
-                <div className="h-2 bg-[#2a2a2a] rounded w-20" />
-              </div>
-            </div>
-            <div className="h-64 bg-[#2a2a2a]" />
-            <div className="p-4">
-              <div className="h-3 bg-[#2a2a2a] rounded w-3/4" />
-            </div>
-          </div>
+          <Box
+            key={i}
+            sx={{
+              bgcolor: 'background.paper',
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 3,
+              overflow: 'hidden',
+              mb: 2,
+            }}
+          >
+            <Stack direction="row" alignItems="center" spacing={1.5} p={2}>
+              <Skeleton variant="circular" width={40} height={40} />
+              <Box flex={1}>
+                <Skeleton variant="text" width={120} height={14} />
+                <Skeleton variant="text" width={80} height={12} />
+              </Box>
+            </Stack>
+            <Skeleton variant="rectangular" height={260} />
+            <Box p={2}>
+              <Skeleton variant="text" width="75%" />
+            </Box>
+          </Box>
         ))}
-      </div>
+      </Box>
     );
   }
 
   if (posts.length === 0) {
     return (
-      <div className="max-w-xl mx-auto px-4 py-16 flex flex-col items-center text-center">
-        <div className="w-16 h-16 rounded-full bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center mb-4">
-          <Compass size={28} className="text-[#00b8ff]" />
-        </div>
-        <h2 className="text-white text-xl font-semibold mb-2">Your feed is empty</h2>
-        <p className="text-gray-400 text-sm mb-6 max-w-xs">
+      <Box
+        maxWidth={680}
+        mx="auto"
+        px={2}
+        py={8}
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
+        textAlign="center"
+      >
+        <RssFeedRounded sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+        <Typography variant="h6" gutterBottom>
+          Your feed is empty
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 3, maxWidth: 280 }}>
           Subscribe to creators to see their posts here.
-        </p>
-        <Link
-          to="/explore"
-          className="bg-[#00b8ff] hover:bg-[#0099d4] text-white font-semibold rounded-lg px-6 py-2.5 transition-colors"
-        >
-          Explore Creators →
-        </Link>
-      </div>
+        </Typography>
+        <Button variant="contained" color="primary" onClick={() => navigate('/explore')}>
+          Explore Creators
+        </Button>
+      </Box>
     );
   }
 
   return (
-    <div className="max-w-xl mx-auto px-4 py-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-white text-xl font-bold">Feed</h1>
-        <button
-          onClick={() => fetchFeed(1, false)}
-          className="text-gray-400 hover:text-[#00b8ff] transition-colors p-1"
-          title="Refresh feed"
-        >
-          <RefreshCw size={18} />
-        </button>
-      </div>
+    <Box maxWidth={680} mx="auto" px={2} py={3}>
+      <Typography variant="h5" fontWeight="bold" mb={2}>
+        Home
+      </Typography>
 
       {posts.map((post) => (
         <PostCard
@@ -126,23 +136,17 @@ export default function Home() {
       ))}
 
       {hasMore && (
-        <div className="flex justify-center py-4">
-          <button
+        <Box display="flex" justifyContent="center" py={2}>
+          <Button
+            variant="outlined"
             onClick={handleLoadMore}
             disabled={loadingMore}
-            className="bg-[#1a1a1a] border border-[#2a2a2a] text-white hover:border-[#00b8ff] hover:text-[#00b8ff] font-semibold rounded-lg px-6 py-2.5 transition-colors text-sm disabled:opacity-50 flex items-center gap-2"
+            startIcon={loadingMore ? <CircularProgress size={16} color="inherit" /> : null}
           >
-            {loadingMore ? (
-              <>
-                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                Loading...
-              </>
-            ) : (
-              'Load More'
-            )}
-          </button>
-        </div>
+            {loadingMore ? 'Loading…' : 'Load more'}
+          </Button>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }

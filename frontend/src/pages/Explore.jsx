@@ -1,25 +1,37 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, X } from 'lucide-react';
+import {
+  Box, Typography, TextField, Grid, InputAdornment, Skeleton, Button,
+  CircularProgress,
+} from '@mui/material';
+import { Search, SearchOff } from '@mui/icons-material';
 import { listCreators, searchUsers } from '../api/users.js';
-import { subscribe, unsubscribe, checkSubscription } from '../api/subscriptions.js';
+import { subscribe, unsubscribe } from '../api/subscriptions.js';
 import CreatorCard from '../components/CreatorCard.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 
 function SkeletonCard() {
   return (
-    <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl overflow-hidden animate-pulse">
-      <div className="h-28 bg-[#2a2a2a]" />
-      <div className="pt-7 px-4 pb-4">
-        <div className="h-3 bg-[#2a2a2a] rounded w-24 mb-2" />
-        <div className="h-2 bg-[#2a2a2a] rounded w-16 mb-3" />
-        <div className="h-2 bg-[#2a2a2a] rounded w-full mb-1" />
-        <div className="h-2 bg-[#2a2a2a] rounded w-3/4 mb-4" />
-        <div className="flex justify-between items-center">
-          <div className="h-3 bg-[#2a2a2a] rounded w-16" />
-          <div className="h-8 bg-[#2a2a2a] rounded w-24" />
-        </div>
-      </div>
-    </div>
+    <Box
+      sx={{
+        bgcolor: 'background.paper',
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 3,
+        overflow: 'hidden',
+      }}
+    >
+      <Skeleton variant="rectangular" height={200} />
+      <Box sx={{ pt: '28px', px: 2, pb: 2 }}>
+        <Skeleton variant="text" width={96} height={14} sx={{ mb: 1 }} />
+        <Skeleton variant="text" width={64} height={12} sx={{ mb: 1.5 }} />
+        <Skeleton variant="text" width="100%" height={12} sx={{ mb: 0.5 }} />
+        <Skeleton variant="text" width="75%" height={12} sx={{ mb: 2 }} />
+        <Box display="flex" justifyContent="space-between" alignItems="center">
+          <Skeleton variant="text" width={64} height={14} />
+          <Skeleton variant="rounded" width={96} height={32} />
+        </Box>
+      </Box>
+    </Box>
   );
 }
 
@@ -89,77 +101,77 @@ export default function Explore() {
   };
 
   const displayList = searchResults !== null ? searchResults : creators;
+  const isLoading = loading || searchLoading;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6">
-      <div className="mb-6">
-        <h1 className="text-white text-xl font-bold mb-4">Explore Creators</h1>
+    <Box px={3} py={3}>
+      <Typography variant="h5" fontWeight="bold" mb={2}>
+        Discover Creators
+      </Typography>
 
-        {/* Search Bar */}
-        <div className="relative">
-          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search creators..."
-            className="w-full bg-[#1a1a1a] border border-[#2a2a2a] text-white placeholder-gray-500 rounded-xl pl-10 pr-10 py-3 text-sm focus:border-[#00b8ff] focus:outline-none transition-colors"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
-            >
-              <X size={16} />
-            </button>
-          )}
-        </div>
-      </div>
+      <TextField
+        fullWidth
+        placeholder="Search creators..."
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        sx={{ mb: 3 }}
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              {searchLoading
+                ? <CircularProgress size={18} color="inherit" />
+                : <Search fontSize="small" />}
+            </InputAdornment>
+          ),
+        }}
+      />
 
-      {/* Results */}
-      {loading || searchLoading ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
-        </div>
+      {isLoading ? (
+        <Grid container spacing={3}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Grid item xs={12} sm={6} md={4} key={i}>
+              <SkeletonCard />
+            </Grid>
+          ))}
+        </Grid>
       ) : displayList.length === 0 ? (
-        <div className="text-center py-16">
-          <p className="text-gray-400 text-lg font-semibold mb-2">
+        <Box display="flex" flexDirection="column" alignItems="center" textAlign="center" py={10}>
+          <SearchOff sx={{ fontSize: 56, color: 'text.secondary', mb: 2 }} />
+          <Typography variant="h6" gutterBottom>
             {searchQuery ? 'No results found' : 'No creators yet'}
-          </p>
-          <p className="text-gray-600 text-sm">
-            {searchQuery ? `Try a different search term` : 'Be the first to create an account!'}
-          </p>
-        </div>
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {searchQuery ? 'Try a different search term' : 'Be the first to create an account!'}
+          </Typography>
+        </Box>
       ) : (
         <>
           {searchResults !== null && (
-            <p className="text-gray-500 text-sm mb-4">
-              {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} for "{searchQuery}"
-            </p>
+            <Typography variant="body2" color="text.secondary" mb={2}>
+              {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} for &ldquo;{searchQuery}&rdquo;
+            </Typography>
           )}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <Grid container spacing={3}>
             {displayList.map((creator) => (
-              <CreatorCard
-                key={creator.id}
-                creator={creator}
-                isSubscribed={subscriptions[creator.id]}
-                onSubscribe={user && user.id !== creator.id ? handleSubscribe : undefined}
-              />
+              <Grid item xs={12} sm={6} md={4} key={creator.id}>
+                <CreatorCard
+                  creator={creator}
+                  isSubscribed={subscriptions[creator.id]}
+                  onSubscribe={user && user.id !== creator.id ? handleSubscribe : undefined}
+                />
+              </Grid>
             ))}
-          </div>
+          </Grid>
 
           {searchResults === null && hasMore && (
-            <div className="flex justify-center mt-8">
-              <button
-                onClick={() => fetchCreators(page + 1)}
-                className="bg-[#1a1a1a] border border-[#2a2a2a] text-white hover:border-[#00b8ff] hover:text-[#00b8ff] font-semibold rounded-lg px-6 py-2.5 transition-colors text-sm"
-              >
+            <Box display="flex" justifyContent="center" mt={4}>
+              <Button variant="outlined" onClick={() => fetchCreators(page + 1)}>
                 Load More
-              </button>
-            </div>
+              </Button>
+            </Box>
           )}
         </>
       )}
-    </div>
+    </Box>
   );
 }

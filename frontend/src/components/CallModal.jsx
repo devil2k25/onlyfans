@@ -1,5 +1,17 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Phone } from 'lucide-react';
+import Dialog from '@mui/material/Dialog';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import IconButton from '@mui/material/IconButton';
+import Fab from '@mui/material/Fab';
+import Avatar from '@mui/material/Avatar';
+import MicIcon from '@mui/icons-material/Mic';
+import MicOffIcon from '@mui/icons-material/MicOff';
+import VideocamIcon from '@mui/icons-material/Videocam';
+import VideocamOffIcon from '@mui/icons-material/VideocamOff';
+import CallEndIcon from '@mui/icons-material/CallEnd';
+import PhoneIcon from '@mui/icons-material/Phone';
+import PhoneDisabledIcon from '@mui/icons-material/PhoneDisabled';
 import { useSocket } from '../context/SocketContext';
 
 const ICE_SERVERS = {
@@ -233,124 +245,207 @@ export default function CallModal({ session, targetUser, callType, isIncoming, o
   const avatarLetter = displayName[0]?.toUpperCase() || '?';
 
   return (
-    <div className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center">
-      <div className="relative w-full h-full md:w-[640px] md:h-[480px] md:rounded-2xl overflow-hidden bg-[#0a0a0a] border border-[#2a2a2a]">
-
+    <Dialog
+      open
+      fullScreen
+      PaperProps={{ sx: { bgcolor: '#000' } }}
+    >
+      <Box sx={{ position: 'relative', width: '100%', height: '100%', bgcolor: '#0a0a0a' }}>
         {/* Remote video / audio placeholder */}
         {callType === 'video' ? (
-          <video
+          <Box
+            component="video"
             ref={remoteVideoRef}
             autoPlay
             playsInline
-            className="w-full h-full object-cover"
+            sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center gap-4">
-            {targetUser?.avatar_url ? (
-              <img
-                src={targetUser.avatar_url}
-                alt={displayName}
-                className="w-32 h-32 rounded-full object-cover border-4 border-[#00b8ff]"
-              />
-            ) : (
-              <div className="w-32 h-32 rounded-full bg-[#00b8ff] flex items-center justify-center text-white text-5xl font-bold">
-                {avatarLetter}
-              </div>
-            )}
-            <p className="text-white text-2xl font-semibold">{displayName}</p>
-            {callType === 'audio' && (
-              <video ref={remoteVideoRef} autoPlay playsInline className="hidden" />
-            )}
-          </div>
+          <Box
+            sx={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 2,
+            }}
+          >
+            <Avatar
+              src={targetUser?.avatar_url || undefined}
+              sx={{
+                width: 128,
+                height: 128,
+                bgcolor: 'primary.main',
+                color: '#000',
+                fontSize: '3rem',
+                fontWeight: 700,
+                border: '4px solid',
+                borderColor: 'primary.main',
+              }}
+            >
+              {!targetUser?.avatar_url && avatarLetter}
+            </Avatar>
+            <Typography variant="h5" sx={{ color: '#fff', fontWeight: 600 }}>
+              {displayName}
+            </Typography>
+            {/* Hidden audio element for audio calls */}
+            <Box
+              component="video"
+              ref={remoteVideoRef}
+              autoPlay
+              playsInline
+              sx={{ display: 'none' }}
+            />
+          </Box>
         )}
 
         {/* Status overlay */}
-        <div className="absolute top-4 left-0 right-0 flex flex-col items-center gap-1 pointer-events-none">
-          <p className="text-white font-semibold text-lg drop-shadow">{displayName}</p>
-          <p className="text-gray-300 text-sm drop-shadow">
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 24,
+            left: 0,
+            right: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 0.5,
+            pointerEvents: 'none',
+          }}
+        >
+          <Typography
+            variant="h6"
+            sx={{ color: '#fff', fontWeight: 600, textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}
+          >
+            {displayName}
+          </Typography>
+          <Typography
+            variant="body2"
+            sx={{ color: 'rgba(255,255,255,0.8)', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}
+          >
             {callState === 'connecting' && 'Calling…'}
             {callState === 'incoming' && 'Incoming call'}
             {callState === 'accepting' && 'Connecting…'}
             {callState === 'active' && formatDuration(duration)}
-          </p>
-        </div>
+          </Typography>
+        </Box>
 
         {/* Local video (picture-in-picture) */}
         {callType === 'video' && (
-          <div className="absolute bottom-24 right-4 w-28 h-20 rounded-lg overflow-hidden border-2 border-[#2a2a2a] bg-[#1a1a1a]">
-            <video
+          <Box
+            sx={{
+              position: 'absolute',
+              bottom: 112,
+              right: 16,
+              width: 112,
+              height: 80,
+              borderRadius: 2,
+              overflow: 'hidden',
+              border: '2px solid #2a2a2a',
+              bgcolor: '#1a1a1a',
+            }}
+          >
+            <Box
+              component="video"
               ref={localVideoRef}
               autoPlay
               playsInline
               muted
-              className="w-full h-full object-cover"
+              sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
-          </div>
+          </Box>
         )}
 
         {/* Incoming call buttons */}
         {callState === 'incoming' && (
-          <div className="absolute bottom-8 left-0 right-0 flex items-center justify-center gap-16">
-            <button
+          <Box
+            sx={{
+              position: 'absolute',
+              bottom: 48,
+              left: 0,
+              right: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+            }}
+          >
+            <Fab
               onClick={handleReject}
-              className="w-16 h-16 rounded-full bg-red-600 hover:bg-red-500 flex items-center justify-center transition-colors shadow-lg"
+              size="large"
+              sx={{ bgcolor: '#d32f2f', '&:hover': { bgcolor: '#b71c1c' }, color: '#fff' }}
               title="Reject"
             >
-              <PhoneOff size={28} className="text-white" />
-            </button>
-            <button
+              <PhoneDisabledIcon />
+            </Fab>
+            <Fab
               onClick={handleAccept}
-              className="w-16 h-16 rounded-full bg-green-600 hover:bg-green-500 flex items-center justify-center transition-colors shadow-lg"
+              size="large"
+              sx={{ bgcolor: '#388e3c', '&:hover': { bgcolor: '#2e7d32' }, color: '#fff' }}
               title="Accept"
             >
-              <Phone size={28} className="text-white" />
-            </button>
-          </div>
+              <PhoneIcon />
+            </Fab>
+          </Box>
         )}
 
         {/* In-call controls */}
         {callState !== 'incoming' && (
-          <div className="absolute bottom-8 left-0 right-0 flex items-center justify-center gap-4">
-            <button
+          <Box
+            sx={{
+              position: 'absolute',
+              bottom: 48,
+              left: 0,
+              right: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 2,
+            }}
+          >
+            <IconButton
               onClick={toggleMute}
-              className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
-                isMuted ? 'bg-red-600 hover:bg-red-500' : 'bg-[#2a2a2a] hover:bg-[#3a3a3a]'
-              }`}
               title={isMuted ? 'Unmute' : 'Mute'}
+              sx={{
+                width: 52,
+                height: 52,
+                bgcolor: isMuted ? '#d32f2f' : '#2a2a2a',
+                color: '#fff',
+                '&:hover': { bgcolor: isMuted ? '#b71c1c' : '#3a3a3a' },
+              }}
             >
-              {isMuted ? (
-                <MicOff size={20} className="text-white" />
-              ) : (
-                <Mic size={20} className="text-white" />
-              )}
-            </button>
+              {isMuted ? <MicOffIcon /> : <MicIcon />}
+            </IconButton>
 
             {callType === 'video' && (
-              <button
+              <IconButton
                 onClick={toggleVideo}
-                className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
-                  isVideoOff ? 'bg-red-600 hover:bg-red-500' : 'bg-[#2a2a2a] hover:bg-[#3a3a3a]'
-                }`}
                 title={isVideoOff ? 'Turn on camera' : 'Turn off camera'}
+                sx={{
+                  width: 52,
+                  height: 52,
+                  bgcolor: isVideoOff ? '#d32f2f' : '#2a2a2a',
+                  color: '#fff',
+                  '&:hover': { bgcolor: isVideoOff ? '#b71c1c' : '#3a3a3a' },
+                }}
               >
-                {isVideoOff ? (
-                  <VideoOff size={20} className="text-white" />
-                ) : (
-                  <Video size={20} className="text-white" />
-                )}
-              </button>
+                {isVideoOff ? <VideocamOffIcon /> : <VideocamIcon />}
+              </IconButton>
             )}
 
-            <button
+            <Fab
               onClick={endCall}
-              className="w-14 h-14 rounded-full bg-red-600 hover:bg-red-500 flex items-center justify-center transition-colors shadow-lg"
+              size="large"
+              sx={{ bgcolor: '#d32f2f', '&:hover': { bgcolor: '#b71c1c' }, color: '#fff' }}
               title="End call"
             >
-              <PhoneOff size={24} className="text-white" />
-            </button>
-          </div>
+              <CallEndIcon />
+            </Fab>
+          </Box>
         )}
-      </div>
-    </div>
+      </Box>
+    </Dialog>
   );
 }
