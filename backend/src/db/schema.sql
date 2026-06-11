@@ -125,3 +125,87 @@ BEGIN
   END IF;
 END;
 $$;
+
+-- ─── Video / Audio Calling ────────────────────────────────────────────────────
+
+-- Call rate columns on users
+ALTER TABLE users ADD COLUMN IF NOT EXISTS video_call_rate_cents INTEGER DEFAULT 500;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS audio_call_rate_cents INTEGER DEFAULT 300;
+
+-- 1-on-1 call sessions
+CREATE TABLE IF NOT EXISTS call_sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  caller_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  receiver_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  call_type VARCHAR(10) NOT NULL CHECK (call_type IN ('video', 'audio')),
+  status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'ended', 'missed', 'rejected')),
+  started_at TIMESTAMPTZ,
+  ended_at TIMESTAMPTZ,
+  duration_seconds INTEGER,
+  price_cents INTEGER DEFAULT 0,
+  stripe_payment_intent_id VARCHAR(255),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Creator availability slots (recurring weekly schedule)
+CREATE TABLE IF NOT EXISTS availability_slots (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  creator_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  day_of_week INTEGER NOT NULL CHECK (day_of_week BETWEEN 0 AND 6),
+  start_time TIME NOT NULL,
+  end_time TIME NOT NULL,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Scheduled calls booked by subscribers
+CREATE TABLE IF NOT EXISTS call_bookings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  creator_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  subscriber_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  scheduled_at TIMESTAMPTZ NOT NULL,
+  duration_minutes INTEGER NOT NULL DEFAULT 15,
+  call_type VARCHAR(10) NOT NULL CHECK (call_type IN ('video', 'audio')),
+  price_cents INTEGER NOT NULL,
+  status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'completed', 'cancelled')),
+  stripe_payment_intent_id VARCHAR(255),
+  notes TEXT,
+  call_session_id UUID REFERENCES call_sessions(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ─── Live Streaming ───────────────────────────────────────────────────────────
+
+-- Live streams
+CREATE TABLE IF NOT EXISTS live_streams (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  creator_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  status VARCHAR(20) DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'live', 'ended')),
+  is_paid BOOLEAN DEFAULT FALSE,
+  price_cents INTEGER DEFAULT 0,
+  viewer_count INTEGER DEFAULT 0,
+  peak_viewer_count INTEGER DEFAULT 0,
+  scheduled_at TIMESTAMPTZ,
+  started_at TIMESTAMPTZ,
+  ended_at TIMESTAMPTZ,
+  thumbnail_url VARCHAR(500),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Live stream chat messages
+CREATE TABLE IF NOT EXISTS stream_chat (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  stream_id UUID NOT NULL REFERENCES live_streams(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_call_sessions_caller ON call_sessions(caller_id);
+CREATE INDEX IF NOT EXISTS idx_call_sessions_receiver ON call_sessions(receiver_id);
+CREATE INDEX IF NOT EXISTS idx_call_bookings_creator ON call_bookings(creator_id);
+CREATE INDEX IF NOT EXISTS idx_call_bookings_subscriber ON call_bookings(subscriber_id);
+CREATE INDEX IF NOT EXISTS idx_live_streams_creator ON live_streams(creator_id);
+CREATE INDEX IF NOT EXISTS idx_stream_chat_stream ON stream_chat(stream_id);
