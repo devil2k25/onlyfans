@@ -11,6 +11,8 @@ const postRoutes = require('./routes/post.routes');
 const subscriptionRoutes = require('./routes/subscription.routes');
 const messageRoutes = require('./routes/message.routes');
 const paymentRoutes = require('./routes/payment.routes');
+const callRoutes = require('./routes/call.routes');
+const streamRoutes = require('./routes/stream.routes');
 
 const app = express();
 
@@ -43,6 +45,8 @@ app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/calls', callRoutes);
+app.use('/api/streams', streamRoutes);
 
 // ─── Health check ─────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {

@@ -1,10 +1,12 @@
 'use strict';
 
 const fs = require('fs');
+const http = require('http');
 const path = require('path');
 require('dotenv').config();
 
 const app = require('./app');
+const { initSocket } = require('./socket');
 
 const PORT = parseInt(process.env.PORT, 10) || 5000;
 const UPLOADS_DIR = process.env.UPLOADS_DIR || 'uploads';
@@ -24,8 +26,12 @@ dirs.forEach((dir) => {
   }
 });
 
+// Create HTTP server and attach Socket.io
+const httpServer = http.createServer(app);
+initSocket(httpServer);
+
 // Start the server
-const server = app.listen(PORT, () => {
+const server = httpServer.listen(PORT, () => {
   console.log(`
 ╔════════════════════════════════════════════╗
 ║         OnlyFans Backend Server            ║
