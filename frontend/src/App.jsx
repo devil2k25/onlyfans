@@ -1,5 +1,7 @@
 import React from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import Box from '@mui/material/Box';
+import CircularProgress from '@mui/material/CircularProgress';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import { SocketProvider } from './context/SocketContext.jsx';
 import CallManager from './components/CallManager.jsx';
@@ -22,9 +24,17 @@ function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#0a0a0a]">
-        <div className="w-8 h-8 border-2 border-[#00b8ff] border-t-transparent rounded-full animate-spin" />
-      </div>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100vh',
+          bgcolor: 'background.default',
+        }}
+      >
+        <CircularProgress sx={{ color: 'primary.main' }} />
+      </Box>
     );
   }
   if (!user) return <Navigate to="/login" replace />;
@@ -35,9 +45,17 @@ function PublicRoute({ children }) {
   const { user, loading } = useAuth();
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#0a0a0a]">
-        <div className="w-8 h-8 border-2 border-[#00b8ff] border-t-transparent rounded-full animate-spin" />
-      </div>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100vh',
+          bgcolor: 'background.default',
+        }}
+      >
+        <CircularProgress sx={{ color: 'primary.main' }} />
+      </Box>
     );
   }
   if (user) return <Navigate to="/" replace />;
@@ -50,9 +68,16 @@ function AppLayout() {
   const showNav = !noNavRoutes.includes(location.pathname);
 
   return (
-    <div className="flex min-h-screen bg-[#0a0a0a]">
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
       {showNav && <Navbar />}
-      <main className={showNav ? 'flex-1 md:ml-64 pb-20 md:pb-0' : 'flex-1'}>
+      <Box
+        component="main"
+        sx={
+          showNav
+            ? { flexGrow: 1, ml: { md: '240px' }, pb: { xs: '70px', md: 0 } }
+            : { flexGrow: 1 }
+        }
+      >
         <Routes>
           <Route
             path="/"
@@ -132,8 +157,8 @@ function AppLayout() {
           {/* Profile route last to avoid catching other paths */}
           <Route path="/:username" element={<Profile />} />
         </Routes>
-      </main>
-    </div>
+      </Box>
+    </Box>
   );
 }
 
