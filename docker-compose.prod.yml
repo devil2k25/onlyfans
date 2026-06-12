@@ -1,0 +1,44 @@
+version: '3.8'
+
+# Production compose — frontend is built separately and served by nginx.
+# PostgreSQL runs in a container (saves RDS cost on free tier).
+# Backend runs in a container, accessible only from localhost.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: onlyfans_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-onlyfans}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: onlyfans
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/src/db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    ports:
+      - '127.0.0.1:5432:5432'  # not exposed to internet
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER:-onlyfans}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: onlyfans_backend
+    restart: always
+    env_file: ./backend/.env
+    ports:
+      - '127.0.0.1:5000:5000'  # nginx proxies from outside
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  uploads:

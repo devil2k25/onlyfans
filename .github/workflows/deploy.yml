@@ -1,0 +1,77 @@
+name: Deploy to AWS EC2
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+
+      - name: Upload frontend build to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: 'frontend/dist/'
+          target: '/tmp/onlyfans-dist'
+          strip_components: 2
+
+      - name: Deploy backend and restart services
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+
+            # Pull latest code
+            cd /home/ubuntu/onlyfans
+            git fetch origin main
+            git reset --hard origin/main
+
+            # Install backend production deps
+            cd backend
+            npm ci --omit=dev
+            cd ..
+
+            # Move frontend build into nginx serve directory
+            sudo mkdir -p /var/www/onlyfans
+            sudo rsync -a --delete /tmp/onlyfans-dist/ /var/www/onlyfans/
+            sudo chown -R www-data:www-data /var/www/onlyfans
+
+            # Restart backend with PM2
+            if pm2 show onlyfans-backend > /dev/null 2>&1; then
+              pm2 restart onlyfans-backend
+            else
+              cd /home/ubuntu/onlyfans/backend
+              pm2 start src/server.js --name onlyfans-backend --env production
+            fi
+            pm2 save
+
+            # Reload nginx
+            sudo nginx -t && sudo systemctl reload nginx
+
+            echo "Deployment complete ✓"
